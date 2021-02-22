@@ -72,7 +72,7 @@ fn main() {
             Vec2i(160, 20),
             true
         ),
-        obstacles: vec![Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(20, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(50, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(75, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false)],
+        obstacles: vec![Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 0), false); 10],
         spawn_timer: 0,
         scroll_speed: 1,
         map: Tilemap::new(
@@ -169,13 +169,13 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
  *  if new obstacles are needed, adds them
  */
 fn update_obstacles(state: &mut GameState){
-    let mut expired:Vec<usize> = vec![0];
+    let mut rng = rand::thread_rng();
     for sprite in state.obstacles.iter_mut(){
         if sprite.drawable{
             sprite.position.1 -= 1;
 
             if sprite.position.1<=0{
-                //sprite.position.0 = 40;
+                sprite.position.0 = rng.gen_range(0, WIDTH as i32 -16);
                 sprite.position.1 = HEIGHT as i32 - 16;
                 sprite.drawable = false;
             }
@@ -183,14 +183,22 @@ fn update_obstacles(state: &mut GameState){
     }
     
     if state.spawn_timer ==0{
-        let mut flipped = false;
+        let mut flipped =false;
         for sprite in state.obstacles.iter_mut(){
             if !sprite.drawable && !flipped{
                 sprite.drawable = true;
-                flipped = true;
+                flipped = rng.gen_range(0,5)<3;
+                if rng.gen_bool(0.2){
+                    sprite.frame.x = 16;
+                }
+                else{
+                    sprite.frame.x = 0;
+                }
+                //TODO: make obstacles not spawn Together
+                //TODO: make diff types of obstacles spawn
             }
         }
-        state.spawn_timer =20;
+        state.spawn_timer =rng.gen_range(16, 50);
     }
     state.spawn_timer -=1;
 }
@@ -210,14 +218,11 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
         // TODO: Add Accel?
         state.player.position.0 += 2;
         // TODO: Maybe Animation?
-        state.player.position.0+=1;
     }
     if input.key_held(VirtualKeyCode::Left) {
         // TODO: Add accel?
         state.player.position.0 -= 2;
         // TODO: Maybe Animation?
-        state.player.position.0-=1;
-
     }
 
     // Scroll the scene
