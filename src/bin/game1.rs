@@ -7,6 +7,7 @@ use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
+use rand::Rng;
 
 // Mod without brackets looks for a nearby file.
 mod screen;
@@ -39,7 +40,6 @@ struct GameState {
     spawn_timer:usize,
     scroll_speed:usize,
     map: Tilemap,
-
 }
 
 const WIDTH: usize = 320;
@@ -69,7 +69,7 @@ fn main() {
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/king.png")));
-    let tileTex = Rc::new(Texture::with_file(Path::new("content/IceTileset.png")));
+    let tileTex = Rc::new(Texture::with_file(Path::new("content/Background.png")));
     let tileset = Rc::new(Tileset::new(
         vec![
             Tile { solid: false },
@@ -96,9 +96,10 @@ fn main() {
         scroll_speed: 1,
         map: Tilemap::new(
             Vec2i(0, 0),
-            (10, 7),
+            (10, 8),
             &tileset,
             vec![
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
