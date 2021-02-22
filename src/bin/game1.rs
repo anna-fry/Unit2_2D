@@ -8,27 +8,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
-// Mod without brackets looks for a nearby file.
-mod screen;
-// Then we can use as usual.  The screen module will have drawing utilities.
-use screen::Screen;
-// Collision will have our collision bodies and contact types
-mod collision;
-// Lazy glob imports
-use collision::*;
-// Texture has our image loading and processing stuff
-mod texture;
-use texture::Texture;
-// Sprite will define our movable sprites
-mod sprite;
-// Lazy glob import, see the extension trait business later for why
-use sprite::*;
-// And we'll put our general purpose types like color and geometry here:
-mod types;
-use types::*;
-
-mod tiles;
-use tiles::*;
+use Unit2_2D::{collision::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
 
 //TODO: Fill out state
 // The State needs to keep track of the player...
