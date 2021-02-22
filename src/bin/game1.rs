@@ -8,14 +8,27 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
+// Mod without brackets looks for a nearby file.
 mod screen;
-use crate::screen::Screen;
+// Then we can use as usual.  The screen module will have drawing utilities.
+use screen::Screen;
+// Collision will have our collision bodies and contact types
+mod collision;
+// Lazy glob imports
+use collision::*;
+// Texture has our image loading and processing stuff
+mod texture;
+use texture::Texture;
+// Sprite will define our movable sprites
+mod sprite;
+// Lazy glob import, see the extension trait business later for why
+use sprite::*;
+// And we'll put our general purpose types like color and geometry here:
 mod types;
 use types::*;
-mod sprite;
-use crate::sprite::*;
-mod texture;
-use crate::texture::Texture;
+
+mod tiles;
+use tiles::*;
 
 //TODO: Fill out state
 // The State needs to keep track of the player...
@@ -25,11 +38,12 @@ struct GameState {
     obstacles: Vec<Sprite>,
     spawn_timer:usize,
     scroll_speed:usize,
+    map: Tilemap,
 
 }
 
 const WIDTH: usize = 320;
-const HEIGHT: usize = 480;
+const HEIGHT: usize = 240;
 const DEPTH: usize = 4;
 const DT: f64 = 1.0 / 60.0;
 
@@ -55,6 +69,16 @@ fn main() {
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/king.png")));
+    let tileTex = Rc::new(Texture::with_file(Path::new("content/IceTileset.png")));
+    let tileset = Rc::new(Tileset::new(
+        vec![
+            Tile { solid: false },
+            Tile { solid: false },
+            Tile { solid: true },
+            Tile { solid: true },
+        ],
+        &tileTex,
+    ));
     let mut state = GameState {
         player: Sprite::new(
             &tex,
@@ -64,12 +88,27 @@ fn main() {
                 w: 16,
                 h: 16,
             },
-            Vec2i(90, 200),
+            Vec2i(160, 20),
             true
         ),
         obstacles: vec![Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(20, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(50, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(75, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false)],
         spawn_timer: 0,
         scroll_speed: 1
+        map: Tilemap::new(
+            Vec2i(0, 0),
+            (10, 7),
+            &tileset,
+            vec![
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+            ],
+        )
+
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -130,13 +169,14 @@ fn main() {
 fn draw_game(state: &GameState, screen: &mut Screen) {
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
+
     // TODO: Draw tiles
+    state.map.draw(screen);
     // TODO: Draw Sprites
     screen.draw_sprite(&state.player);
     for sprite in state.obstacles.iter(){
         screen.draw_sprite(sprite);
     }
-
 }
 /**
  * updates all obstacles on screen:
@@ -176,12 +216,14 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     // Player control goes here
 
     if input.key_held(VirtualKeyCode::Right) {
-        // TODO: Move our player to the right
+        // TODO: Add Accel?
+        state.player.position.0 += 2;
         // TODO: Maybe Animation?
         state.player.position.0+=1;
     }
     if input.key_held(VirtualKeyCode::Left) {
-        // TODO: Move our player to the left
+        // TODO: Add accel?
+        state.player.position.0 -= 2;
         // TODO: Maybe Animation?
         state.player.position.0-=1;
 
