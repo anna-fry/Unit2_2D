@@ -1,37 +1,77 @@
 // // TODO: Compare pos of obstacles and the player from the state and change velocity/health based on collision
+use crate::sprite::Sprite;
+use crate::types::*;
 
-// fn gather_contacts(statics: &[Wall], dynamics: &[Mobile], into: &mut Vec<Contact>) {
-//     // collide mobiles against mobiles
-//     for (ai, a) in dynamics.iter().enumerate() {
-//         for (bi, b) in dynamics.iter().enumerate().skip(ai + 1) {
-//             if Rect::rect_touching(a.rect, b.rect) {
-//                 let mtv = Rect::rect_displacement(a.rect, b.rect);
-//                 if let Some(x) = mtv {
-//                     into.push(Contact {
-//                         a: ColliderID::Dynamic(ai),
-//                         b: ColliderID::Dynamic(bi),
-//                         mtv: x,
-//                     });
-//                 }
-//             }
-//         }
-//     }
-//     // collide mobiles against walls
-//     for (ai, a) in dynamics.iter().enumerate() {
-//         for (bi, b) in statics.iter().enumerate() {
-//             if Rect::rect_touching(a.rect, b.rect) {
-//                 let mtv = Rect::rect_displacement(a.rect, b.rect);
-//                 if let Some(x) = mtv {
-//                     into.push(Contact {
-//                         a: ColliderID::Dynamic(ai),
-//                         b: ColliderID::Static(bi),
-//                         mtv: x,
-//                     });
-//                 }
-//             }
-//         }
-//     }
-// }
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+enum ColliderID {
+    Static(usize),
+    Dynamic(usize),
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+struct Contact {
+    a: ColliderID,
+    b: ColliderID,
+    mtv: (i32, i32),
+}
+
+// TODO: Adjust for how we're going to represent bounding boxes
+fn gather_contacts(statics: &Vec<Sprite>, dynamics: &Vec<Sprite>, into: &mut Vec<Contact>) {
+    // collide mobiles against mobiles
+    for (ai, a) in dynamics.iter().enumerate() {
+        for (bi, b) in dynamics.iter().enumerate() {
+            let a_rect = Rect {
+                x: a.position.0,
+                y: a.position.1,
+                w: a.frame.w,
+                h: a.frame.h,
+            };
+            let b_rect = Rect {
+                x: b.position.0,
+                y: b.position.1,
+                w: b.frame.w,
+                h: b.frame.h,
+            };
+            if Rect::rect_touching(a.frame, b.frame) {
+                let mtv = Rect::rect_displacement(a_rect, b_rect);
+                if let Some(x) = mtv {
+                    into.push(Contact {
+                        a: ColliderID::Dynamic(ai),
+                        b: ColliderID::Dynamic(bi),
+                        mtv: x,
+                    });
+                }
+            }
+        }
+    }
+    // collide mobiles against walls
+    for (ai, a) in dynamics.iter().enumerate() {
+        for (bi, b) in statics.iter().enumerate() {
+            let a_rect = Rect {
+                x: a.position.0,
+                y: a.position.1,
+                w: a.frame.w,
+                h: a.frame.h,
+            };
+            let b_rect = Rect {
+                x: b.position.0,
+                y: b.position.1,
+                w: b.frame.w,
+                h: b.frame.h,
+            };
+            if Rect::rect_touching(a_rect, b_rect) {
+                let mtv = Rect::rect_displacement(a_rect, b_rect);
+                if let Some(x) = mtv {
+                    into.push(Contact {
+                        a: ColliderID::Dynamic(ai),
+                        b: ColliderID::Static(bi),
+                        mtv: x,
+                    });
+                }
+            }
+        }
+    }
+}
 
 // fn restitute(statics: &[Wall], dynamics: &mut [Mobile], contacts: &mut [Contact]) {
 //     // handle restitution of dynamics against statics wrt contacts.

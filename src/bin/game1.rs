@@ -16,17 +16,15 @@ use Unit2_2D::{collision::*, screen::Screen, sprite::*, texture::Texture, tiles:
 struct GameState {
     player: Sprite,
     obstacles: Vec<Sprite>,
-    spawn_timer:usize,
-    scroll_speed:usize,
+    spawn_timer: usize,
+    scroll_speed: usize,
     map: Tilemap,
-
 }
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 240;
 const DEPTH: usize = 4;
 const DT: f64 = 1.0 / 60.0;
-
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -69,9 +67,65 @@ fn main() {
                 h: 16,
             },
             Vec2i(160, 20),
-            true
+            true,
         ),
-        obstacles: vec![Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(20, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(50, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(75, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false)],
+        obstacles: vec![
+            Sprite::new(
+                &tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 16,
+                    h: 16,
+                },
+                Vec2i(100, 100),
+                false,
+            ),
+            Sprite::new(
+                &tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 16,
+                    h: 16,
+                },
+                Vec2i(20, 100),
+                false,
+            ),
+            Sprite::new(
+                &tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 16,
+                    h: 16,
+                },
+                Vec2i(50, 100),
+                false,
+            ),
+            Sprite::new(
+                &tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 16,
+                    h: 16,
+                },
+                Vec2i(75, 100),
+                false,
+            ),
+            Sprite::new(
+                &tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 16,
+                    h: 16,
+                },
+                Vec2i(100, 100),
+                false,
+            ),
+        ],
         spawn_timer: 0,
         scroll_speed: 1,
         map: Tilemap::new(
@@ -79,16 +133,11 @@ fn main() {
             (10, 7),
             &tileset,
             vec![
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0,
+                0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0,
+                0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
             ],
-        )
-
+        ),
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -132,12 +181,11 @@ fn main() {
         while available_time >= DT {
             // Eat up one frame worth of time
             available_time -= DT;
-            
+
             update_game(&mut state, &input, frame_count);
             update_obstacles(&mut state);
             // Increment the frame counter
             frame_count += 1;
-            
         }
         // Request redraw
         window.request_redraw();
@@ -154,7 +202,7 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
     state.map.draw(screen);
     // TODO: Draw Sprites
     screen.draw_sprite(&state.player);
-    for sprite in state.obstacles.iter(){
+    for sprite in state.obstacles.iter() {
         screen.draw_sprite(sprite);
     }
 }
@@ -164,33 +212,32 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
  *  removes obstacles over top of screen
  *  if new obstacles are needed, adds them
  */
-fn update_obstacles(state: &mut GameState){
-    let mut expired:Vec<usize> = vec![0];
-    for sprite in state.obstacles.iter_mut(){
-        if sprite.drawable{
+fn update_obstacles(state: &mut GameState) {
+    let mut expired: Vec<usize> = vec![0];
+    for sprite in state.obstacles.iter_mut() {
+        if sprite.drawable {
             sprite.position.1 -= 1;
 
-            if sprite.position.1<=0{
+            if sprite.position.1 <= 0 {
                 //sprite.position.0 = 40;
                 sprite.position.1 = HEIGHT as i32 - 16;
                 sprite.drawable = false;
             }
         }
     }
-    
-    if state.spawn_timer ==0{
+
+    if state.spawn_timer == 0 {
         let mut flipped = false;
-        for sprite in state.obstacles.iter_mut(){
-            if !sprite.drawable && !flipped{
+        for sprite in state.obstacles.iter_mut() {
+            if !sprite.drawable && !flipped {
                 sprite.drawable = true;
                 flipped = true;
             }
         }
-        state.spawn_timer =20;
+        state.spawn_timer = 20;
     }
-    state.spawn_timer -=1;
+    state.spawn_timer -= 1;
 }
-
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     // Player control goes here
@@ -199,14 +246,13 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
         // TODO: Add Accel?
         state.player.position.0 += 2;
         // TODO: Maybe Animation?
-        state.player.position.0+=1;
+        state.player.position.0 += 1;
     }
     if input.key_held(VirtualKeyCode::Left) {
         // TODO: Add accel?
         state.player.position.0 -= 2;
         // TODO: Maybe Animation?
-        state.player.position.0-=1;
-
+        state.player.position.0 -= 1;
     }
 
     // TODO: Detect collisions: See if the player is collided with an obstacle

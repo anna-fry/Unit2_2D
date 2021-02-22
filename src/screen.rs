@@ -1,6 +1,6 @@
 // We can pull in definitions from elsewhere in the crate!
-use crate::texture::Texture;
 use crate::sprite::Sprite;
+use crate::texture::Texture;
 use crate::types::{Rect, Rgba, Vec2i};
 pub struct Screen<'fb> {
     framebuffer: &'fb mut [u8],

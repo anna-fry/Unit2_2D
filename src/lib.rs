@@ -4,4 +4,3 @@ pub mod sprite;
 pub mod texture;
 pub mod tiles;
 pub mod types;
-

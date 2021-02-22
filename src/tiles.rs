@@ -1,13 +1,13 @@
-use std::rc::Rc;
-use crate::texture::Texture;
 use crate::screen::Screen;
+use crate::texture::Texture;
 use crate::types::Rect;
 use crate::types::Vec2i;
+use std::rc::Rc;
 // Get tiles from sheet and move them with time steps
 
 pub const TILE_SZ: usize = 32;
 /// A graphical tile, we'll implement Copy since it's tiny
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub struct Tile {
     pub solid: bool, // ... any extra data like collision flags or other properties
 }
@@ -21,7 +21,7 @@ pub struct Tileset {
     // Maybe not always the best choice if there aren't many tiles in a tileset!
 }
 /// Indices into a Tileset
-#[derive(Clone,Copy,PartialEq,Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct TileID(usize);
 
 /// Grab a tile with a given ID
@@ -65,7 +65,7 @@ pub struct Tilemap {
     /// Where the tilemap is in space, use your favorite number type here
     pub position: Vec2i,
     /// How big it is
-    dims: (usize,usize),
+    dims: (usize, usize),
     /// Which tileset is used for this tilemap
     tileset: Rc<Tileset>,
     /// A row-major grid of tile IDs in tileset

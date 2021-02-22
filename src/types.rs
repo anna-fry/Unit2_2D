@@ -6,7 +6,7 @@ pub struct Rect {
     pub h: u16,
 }
 impl Rect {
-    fn rect_touching(r1: Rect, r2: Rect) -> bool {
+    pub fn rect_touching(r1: Rect, r2: Rect) -> bool {
         // r1 left is left of r2 right
         r1.x <= r2.x+r2.w as i32 &&
             // r2 left is left of r1 right
@@ -17,13 +17,10 @@ impl Rect {
             r2.y <= r1.y+r1.h as i32
     }
 
-    fn rect_displacement(r1: Rect, r2: Rect) -> Option<(i32, i32)> {
-        // Draw this out on paper to double check, but these quantities
-        // will both be positive exactly when the conditions in rect_touching are true.
+    pub fn rect_displacement(r1: Rect, r2: Rect) -> Option<(i32, i32)> {
         let x_overlap = (r1.x + r1.w as i32).min(r2.x + r2.w as i32) - r1.x.max(r2.x);
         let y_overlap = (r1.y + r1.h as i32).min(r2.y + r2.h as i32) - r1.y.max(r2.y);
         if x_overlap >= 0 && y_overlap >= 0 {
-            // This will return the magnitude of overlap in each axis.
             Some((x_overlap, y_overlap))
         } else {
             None
