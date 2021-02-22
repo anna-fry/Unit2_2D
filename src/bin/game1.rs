@@ -185,6 +185,12 @@ fn update_obstacles(state: &mut GameState){
             if !sprite.drawable && !flipped{
                 sprite.drawable = true;
                 flipped = rng.gen_range(0,5)<3;
+                if rng.gen_bool(0.2){
+                    sprite.frame.x = 16;
+                }
+                else{
+                    sprite.frame.x = 0;
+                }
                 //TODO: make obstacles not spawn Together
                 //TODO: make diff types of obstacles spawn
             }
