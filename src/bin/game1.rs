@@ -13,7 +13,7 @@ use crate::screen::Screen;
 mod types;
 use types::*;
 mod sprite;
-use crate::sprite::Sprite;
+use crate::sprite::*;
 mod texture;
 use crate::texture::Texture;
 
@@ -22,12 +22,17 @@ use crate::texture::Texture;
 // Add texture when we decide on the texture we want
 struct GameState {
     player: Sprite,
+    obstacles: Vec<Sprite>,
+    spawn_timer:usize,
+    scroll_speed:usize,
+
 }
 
 const WIDTH: usize = 320;
-const HEIGHT: usize = 240;
+const HEIGHT: usize = 480;
 const DEPTH: usize = 4;
 const DT: f64 = 1.0 / 60.0;
+
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -60,7 +65,11 @@ fn main() {
                 h: 16,
             },
             Vec2i(90, 200),
-        )
+            true
+        ),
+        obstacles: vec![Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(20, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(50, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(75, 100), false),Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 100), false)],
+        spawn_timer: 0,
+        scroll_speed: 1
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -104,11 +113,12 @@ fn main() {
         while available_time >= DT {
             // Eat up one frame worth of time
             available_time -= DT;
-
+            
             update_game(&mut state, &input, frame_count);
-
+            update_obstacles(&mut state);
             // Increment the frame counter
             frame_count += 1;
+            
         }
         // Request redraw
         window.request_redraw();
@@ -120,20 +130,62 @@ fn main() {
 fn draw_game(state: &GameState, screen: &mut Screen) {
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
-    // TODO: Draw tiles 
+    // TODO: Draw tiles
     // TODO: Draw Sprites
+    screen.draw_sprite(&state.player);
+    for sprite in state.obstacles.iter(){
+        screen.draw_sprite(sprite);
+    }
+
 }
+/**
+ * updates all obstacles on screen:
+ *  scrolls up
+ *  removes obstacles over top of screen
+ *  if new obstacles are needed, adds them
+ */
+fn update_obstacles(state: &mut GameState){
+    let mut expired:Vec<usize> = vec![0];
+    for sprite in state.obstacles.iter_mut(){
+        if sprite.drawable{
+            sprite.position.1 -= 1;
+
+            if sprite.position.1<=0{
+                //sprite.position.0 = 40;
+                sprite.position.1 = HEIGHT as i32 - 16;
+                sprite.drawable = false;
+            }
+        }
+    }
+    
+    if state.spawn_timer ==0{
+        let mut flipped = false;
+        for sprite in state.obstacles.iter_mut(){
+            if !sprite.drawable && !flipped{
+                sprite.drawable = true;
+                flipped = true;
+            }
+        }
+        state.spawn_timer =20;
+    }
+    state.spawn_timer -=1;
+}
+
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     // Player control goes here
+
     if input.key_held(VirtualKeyCode::Right) {
         // TODO: Move our player to the right
         // TODO: Maybe Animation?
+        state.player.position.0+=1;
     }
     if input.key_held(VirtualKeyCode::Left) {
         // TODO: Move our player to the left
         // TODO: Maybe Animation?
-    }   
+        state.player.position.0-=1;
+
+    }
 
     // TODO: Detect collisions: See if the player is collided with an obstacle
 
