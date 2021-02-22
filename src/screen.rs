@@ -7,20 +7,24 @@ pub struct Screen<'fb> {
     width: usize,
     height: usize,
     depth: usize,
+    position: Vec2i,
 }
 impl<'fb> Screen<'fb> {
-    pub fn wrap(framebuffer: &'fb mut [u8], width: usize, height: usize, depth: usize) -> Self {
+    pub fn wrap(framebuffer: &'fb mut [u8], width: usize, height: usize, depth: usize, position:Vec2i) -> Self {
         Self {
             framebuffer,
             width,
             height,
             depth,
+            position
         }
     }
     pub fn size(&self) -> (usize, usize) {
         (self.width, self.height)
     }
-    // This is not going to be the most efficient API.
+    pub fn bounds(&self) -> Rect {
+        Rect{x:self.position.0, y:self.position.1, w:self.width as u16, h:self.height as u16}
+    }
     // Lots of bounds checks!
     #[inline(always)]
     pub fn draw_at(&mut self, col: Rgba, x: usize, y: usize) {

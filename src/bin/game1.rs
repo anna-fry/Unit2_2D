@@ -7,6 +7,7 @@ use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
+use std::num;
 use rand::Rng;
 
 use Unit2_2D::{collision::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
@@ -76,9 +77,11 @@ fn main() {
         scroll_speed: 1,
         map: Tilemap::new(
             Vec2i(0, 0),
-            (10, 8),
+            (10, 10),
             &tileset,
             vec![
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
@@ -102,7 +105,7 @@ fn main() {
     event_loop.run(move |event, _, control_flow| {
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
-            let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
+            let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH, Vec2i(0, 0));
             screen.clear(Rgba(0, 0, 0, 0));
 
             draw_game(&state, &mut screen);
@@ -135,7 +138,7 @@ fn main() {
             available_time -= DT;
             
             update_game(&mut state, &input, frame_count);
-            update_obstacles(&mut state);
+            
             // Increment the frame counter
             frame_count += 1;
             
@@ -192,6 +195,13 @@ fn update_obstacles(state: &mut GameState){
     state.spawn_timer -=1;
 }
 
+fn update_tiles(state: &mut GameState){
+    state.map.position.1 -= 1;
+    if state.map.position.1.abs() >= TILE_SZ as i32 {
+        state.map.position.1 = 0;
+    }
+}
+
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     // Player control goes here
@@ -210,9 +220,13 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
 
     }
 
+    // Scroll the scene
+    update_obstacles(state);
+    update_tiles(state);
+
+
     // TODO: Detect collisions: See if the player is collided with an obstacle
 
     // TODO: Handle collisions: Take damage, speed up, or slow down
 
-    // TODO: Scroll the scene
 }
