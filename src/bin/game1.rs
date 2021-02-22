@@ -9,27 +9,7 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 use rand::Rng;
 
-// Mod without brackets looks for a nearby file.
-mod screen;
-// Then we can use as usual.  The screen module will have drawing utilities.
-use screen::Screen;
-// Collision will have our collision bodies and contact types
-mod collision;
-// Lazy glob imports
-use collision::*;
-// Texture has our image loading and processing stuff
-mod texture;
-use texture::Texture;
-// Sprite will define our movable sprites
-mod sprite;
-// Lazy glob import, see the extension trait business later for why
-use sprite::*;
-// And we'll put our general purpose types like color and geometry here:
-mod types;
-use types::*;
-
-mod tiles;
-use tiles::*;
+use Unit2_2D::{collision::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
 
 //TODO: Fill out state
 // The State needs to keep track of the player...
@@ -40,7 +20,6 @@ struct GameState {
     spawn_timer:usize,
     scroll_speed:usize,
     map: Tilemap,
-
 }
 
 const WIDTH: usize = 320;
@@ -70,7 +49,7 @@ fn main() {
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/king.png")));
-    let tileTex = Rc::new(Texture::with_file(Path::new("content/IceTileset.png")));
+    let tileTex = Rc::new(Texture::with_file(Path::new("content/Background.png")));
     let tileset = Rc::new(Tileset::new(
         vec![
             Tile { solid: false },
@@ -97,9 +76,10 @@ fn main() {
         scroll_speed: 1,
         map: Tilemap::new(
             Vec2i(0, 0),
-            (10, 7),
+            (10, 8),
             &tileset,
             vec![
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
