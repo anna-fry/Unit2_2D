@@ -7,10 +7,9 @@ use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
-use std::num;
 use rand::Rng;
 
-use Unit2_2D::{collision::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
+use Unit2_2D::{collision::*, health::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
 
 //TODO: Fill out state
 // The State needs to keep track of the player...
@@ -21,6 +20,7 @@ struct GameState {
     spawn_timer:usize,
     scroll_speed:usize,
     map: Tilemap,
+    health: HealthStatus,
 }
 
 const WIDTH: usize = 320;
@@ -50,7 +50,8 @@ fn main() {
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/king.png")));
-    let tileTex = Rc::new(Texture::with_file(Path::new("content/Background.png")));
+    let tile_tex = Rc::new(Texture::with_file(Path::new("content/Background.png")));
+    let health_tex = Rc::new(Texture::with_file(Path::new("content/Heart.png")));
     let tileset = Rc::new(Tileset::new(
         vec![
             Tile { solid: false },
@@ -58,7 +59,7 @@ fn main() {
             Tile { solid: true },
             Tile { solid: true },
         ],
-        &tileTex,
+        &tile_tex,
     ));
     let mut state = GameState {
         player: Sprite::new(
@@ -91,8 +92,19 @@ fn main() {
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
             ],
-        )
-
+        ),
+        health: HealthStatus{
+            image: health_tex,
+            lives: 3,
+            frame: Rect {
+                x:0,
+                y:0,
+                w:16,
+                h:16
+            },
+            start: Vec2i(260, 15),
+            spacing: 18
+        }
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -161,6 +173,7 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
     for sprite in state.obstacles.iter(){
         screen.draw_sprite(sprite);
     }
+    screen.draw_health(&state.health);
 }
 /**
  * updates all obstacles on screen:
