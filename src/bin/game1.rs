@@ -49,7 +49,7 @@ fn main() {
     };
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
-    let tex = Rc::new(Texture::with_file(Path::new("content/king.png")));
+    let tex = Rc::new(Texture::with_file(Path::new("content/penguin.png")));
     let tile_tex = Rc::new(Texture::with_file(Path::new("content/Background.png")));
     let health_tex = Rc::new(Texture::with_file(Path::new("content/Heart.png")));
     let tileset = Rc::new(Tileset::new(
@@ -66,7 +66,7 @@ fn main() {
             &tex,
             Rect {
                 x: 0,
-                y: 16,
+                y: 0,
                 w: 16,
                 h: 16,
             },
@@ -94,7 +94,7 @@ fn main() {
             ],
         ),
         health: HealthStatus{
-            image: health_tex,
+            image: Rc::clone(&health_tex),
             lives: 3,
             frame: Rect {
                 x:0,
@@ -223,19 +223,21 @@ fn update_tiles(state: &mut GameState){
     }
 }
 
-
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     // Player control goes here
 
     if input.key_held(VirtualKeyCode::Right) {
         // TODO: Add Accel?
         state.player.position.0 += 2;
+        state.player.frame.x = 32;
         // TODO: Maybe Animation?
-    }
-    if input.key_held(VirtualKeyCode::Left) {
+    } else if input.key_held(VirtualKeyCode::Left) {
         // TODO: Add accel?
         state.player.position.0 -= 2;
+        state.player.frame.x = 16;
         // TODO: Maybe Animation?
+    } else {
+        state.player.frame.x = 0;
     }
 
     // Scroll the scene

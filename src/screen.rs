@@ -27,16 +27,20 @@ impl<'fb> Screen<'fb> {
     }
     // Lots of bounds checks!
     #[inline(always)]
-    pub fn draw_at(&mut self, col: Rgba, x: usize, y: usize) {
-        // No need to check x or y < 0, they're usizes!
-        if self.width <= x || self.height <= y {
+    pub fn draw_at(&mut self, col: Rgba, Vec2i(x,y) : Vec2i) {
+        let x = x - self.position.0;
+        let y = y - self.position.1;
+        // The rest is about the same
+        if x < 0 || (self.width as i32) <= x || y < 0 || (self.height as i32) <= y {
             return;
         }
         assert_eq!(self.depth, 4);
+        // Now x and y are within framebuffer bounds so go ahead and draw
         let c = [col.0, col.1, col.2, col.3];
-        let idx = y * self.width * self.depth + x * self.depth;
-        // TODO should handle alpha blending!
-        self.framebuffer[idx..(idx + self.depth)].copy_from_slice(&c);
+        let idx = y * self.width as i32 * self.depth as i32 + x * self.depth as i32;
+        assert!(idx>=0);
+        let idx = idx as usize;
+        self.framebuffer[idx..(idx+self.depth)].copy_from_slice(&c);
     }
     // If we know the primitives in advance we're in much better shape:
     pub fn clear(&mut self, col: Rgba) {
@@ -47,6 +51,9 @@ impl<'fb> Screen<'fb> {
     }
     pub fn rect(&mut self, r: Rect, col: Rgba) {
         let c = [col.0, col.1, col.2, col.3];
+        // Here's the translation
+        let r = Rect{x:r.x-self.position.0, y:r.y-self.position.1, ..r};
+        // And the rest is just the same
         let x0 = r.x.max(0).min(self.width as i32) as usize;
         let x1 = (r.x + r.w as i32).max(0).min(self.width as i32) as usize;
         let y0 = r.y.max(0).min(self.height as i32) as usize;
@@ -55,13 +62,19 @@ impl<'fb> Screen<'fb> {
         let pitch = self.width * depth;
         for row in self.framebuffer[(y0 * pitch)..(y1 * pitch)].chunks_exact_mut(pitch) {
             for p in row[(x0 * depth)..(x1 * depth)].chunks_exact_mut(depth) {
-                // TODO should handle alpha blending
                 p.copy_from_slice(&c);
             }
         }
     }
     pub fn line(&mut self, Vec2i(x0, y0): Vec2i, Vec2i(x1, y1): Vec2i, col: Rgba) {
-        let c = [col.0, col.1, col.2, col.3];
+        let col = [col.0, col.1, col.2, col.3];
+        // translate translate
+        let x0 = x0 - self.position.0;
+        let y0 = y0 - self.position.1;
+        // translate translate
+        let x1 = x1 - self.position.0;
+        let y1 = y1 - self.position.1;
+        // Now proceed as we were
         let mut x = x0;
         let mut y = y0;
         let dx = (x1 - x0).abs();
@@ -71,19 +84,15 @@ impl<'fb> Screen<'fb> {
         let mut err = dx + dy;
         let width = self.width as i32;
         let height = self.height as i32;
-        let depth = self.depth;
-        let pitch = self.width * depth;
         while x != x1 || y != y1 {
-            // We couldn't just clamp x0/y0 and x1/y1 into bounds, because then
-            // we might change the slope of the line.
-            // We could find the intercept of the line with the left/right or top/bottom edges of the rect though, but that's work!
             if 0 <= x && x < width && 0 <= y && y < height {
                 // TODO this bounds check could in theory be avoided with
                 // the unsafe get_unchecked, but maybe better not...
-                // TODO better handle alpha blending too, but not just yet...
-                self.framebuffer[(y as usize * pitch + x as usize * depth)
-                    ..(y as usize * pitch + (x as usize + 1) * depth)]
-                    .copy_from_slice(&c);
+                self.framebuffer[(y as usize * self.width * self.depth + x as usize * self.depth)
+                    ..(y as usize * self.width * self.depth + (x as usize + 1) * self.depth)]
+                    .copy_from_slice(&col);
+                // We couldn't just clamp x0/y0 and x1/y1 into bounds, because then
+                // we might change the slope of the line.
             }
             let e2 = 2 * err;
             if dy <= e2 {
@@ -97,6 +106,13 @@ impl<'fb> Screen<'fb> {
         }
     }
     pub fn bitblt(&mut self, src: &Texture, from: Rect, Vec2i(to_x, to_y): Vec2i) {
+        let (tw,th) = src.size();
+        assert!(0 <= from.x);
+        assert!(from.x < tw as i32);
+        assert!(0 <= from.y);
+        assert!(from.y < th as i32);
+        let to_x = to_x - self.position.0;
+        let to_y = to_y - self.position.1;
         assert!(src.valid_frame(from));
         if (to_x + from.w as i32) < 0
             || (self.width as i32) <= to_x
