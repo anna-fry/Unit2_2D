@@ -19,6 +19,12 @@ impl Sprite {
             drawable,
         }
     }
+    pub fn get_dimensions(&self) -> Vec2i {
+        Vec2i(
+            self.frame.w as i32,
+            self.frame.h as i32,
+        )
+    }
 }
 
 pub trait DrawSpriteExt {

@@ -92,7 +92,7 @@ impl Tilemap {
         }
     }
 
-    pub fn tile_id_at(&self, Vec2i(x, y): Vec2i) -> TileID {
+    pub fn tile_id_at(&self, Vec2i(x, y): Vec2i) -> (TileID, Vec2i) {
         // Translate into map coordinates
         let x = (x - self.position.0) / TILE_SZ as i32;
         let y = (y - self.position.1) / TILE_SZ as i32;
@@ -108,13 +108,14 @@ impl Tilemap {
             y,
             self.dims.1
         );
-        self.map[y as usize * self.dims.0 + x as usize]
+        (self.map[y as usize * self.dims.0 + x as usize], Vec2i(x, y))
     }
     pub fn size(&self) -> (usize, usize) {
         self.dims
     }
-    pub fn tile_at(&self, posn: Vec2i) -> Tile {
-        self.tileset[self.tile_id_at(posn)]
+    pub fn tile_at(&self, posn: Vec2i) -> (Tile, Vec2i) {
+        let tile = self.tile_id_at(posn);
+        (self.tileset[tile.0], tile.1)
     }
 
     pub fn draw(&self, screen:&mut Screen) {

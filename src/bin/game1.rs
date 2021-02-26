@@ -21,6 +21,7 @@ struct GameState {
     scroll_speed: usize,
     map: Tilemap,
     health: HealthStatus,
+    contacts: Vec<Contact>,
 }
 
 const WIDTH: usize = 320;
@@ -103,7 +104,8 @@ fn main() {
             },
             start: Vec2i(260, 15),
             spacing: 18
-        }
+        },
+        contacts: vec![],
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -243,8 +245,11 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     update_tiles(state);
 
 
-    // TODO: Detect collisions: See if the player is collided with an obstacle
+    // Detect collisions: See if the player is collided with an obstacle
+    state.contacts.clear();
+    gather_contacts(&state.map, &state.player, &mut state.contacts);
 
     // TODO: Handle collisions: Take damage, speed up, or slow down
+    restitute(&state.map, &mut state.player, &mut state.contacts);
 
 }
