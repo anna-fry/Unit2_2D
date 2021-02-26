@@ -7,8 +7,9 @@ use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
+use rand::Rng;
 
-use Unit2_2D::{collision::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
+use Unit2_2D::{collision::*, health::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
 
 //TODO: Fill out state
 // The State needs to keep track of the player...
@@ -19,6 +20,7 @@ struct GameState {
     spawn_timer: usize,
     scroll_speed: usize,
     map: Tilemap,
+    health: HealthStatus,
 }
 
 const WIDTH: usize = 320;
@@ -46,8 +48,9 @@ fn main() {
     };
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
-    let tex = Rc::new(Texture::with_file(Path::new("content/king.png")));
-    let tileTex = Rc::new(Texture::with_file(Path::new("content/IceTileset.png")));
+    let tex = Rc::new(Texture::with_file(Path::new("content/penguin.png")));
+    let tile_tex = Rc::new(Texture::with_file(Path::new("content/Background.png")));
+    let health_tex = Rc::new(Texture::with_file(Path::new("content/Heart.png")));
     let tileset = Rc::new(Tileset::new(
         vec![
             Tile { solid: false },
@@ -55,89 +58,52 @@ fn main() {
             Tile { solid: true },
             Tile { solid: true },
         ],
-        &tileTex,
+        &tile_tex,
     ));
     let mut state = GameState {
         player: Sprite::new(
             &tex,
             Rect {
                 x: 0,
-                y: 16,
+                y: 0,
                 w: 16,
                 h: 16,
             },
             Vec2i(160, 20),
             true,
         ),
-        obstacles: vec![
-            Sprite::new(
-                &tex,
-                Rect {
-                    x: 0,
-                    y: 0,
-                    w: 16,
-                    h: 16,
-                },
-                Vec2i(100, 100),
-                false,
-            ),
-            Sprite::new(
-                &tex,
-                Rect {
-                    x: 0,
-                    y: 0,
-                    w: 16,
-                    h: 16,
-                },
-                Vec2i(20, 100),
-                false,
-            ),
-            Sprite::new(
-                &tex,
-                Rect {
-                    x: 0,
-                    y: 0,
-                    w: 16,
-                    h: 16,
-                },
-                Vec2i(50, 100),
-                false,
-            ),
-            Sprite::new(
-                &tex,
-                Rect {
-                    x: 0,
-                    y: 0,
-                    w: 16,
-                    h: 16,
-                },
-                Vec2i(75, 100),
-                false,
-            ),
-            Sprite::new(
-                &tex,
-                Rect {
-                    x: 0,
-                    y: 0,
-                    w: 16,
-                    h: 16,
-                },
-                Vec2i(100, 100),
-                false,
-            ),
-        ],
+        obstacles: vec![Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 0), false); 10],
         spawn_timer: 0,
         scroll_speed: 1,
         map: Tilemap::new(
             Vec2i(0, 0),
-            (10, 7),
+            (10, 10),
             &tileset,
             vec![
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0,
-                0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0,
-                0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
             ],
         ),
+        health: HealthStatus{
+            image: Rc::clone(&health_tex),
+            lives: 3,
+            frame: Rect {
+                x:0,
+                y:0,
+                w:16,
+                h:16
+            },
+            start: Vec2i(260, 15),
+            spacing: 18
+        }
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -150,7 +116,7 @@ fn main() {
     event_loop.run(move |event, _, control_flow| {
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
-            let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
+            let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH, Vec2i(0, 0));
             screen.clear(Rgba(0, 0, 0, 0));
 
             draw_game(&state, &mut screen);
@@ -183,7 +149,7 @@ fn main() {
             available_time -= DT;
 
             update_game(&mut state, &input, frame_count);
-            update_obstacles(&mut state);
+            
             // Increment the frame counter
             frame_count += 1;
         }
@@ -205,6 +171,7 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
     for sprite in state.obstacles.iter() {
         screen.draw_sprite(sprite);
     }
+    screen.draw_health(&state.health);
 }
 /**
  * updates all obstacles on screen:
@@ -212,31 +179,46 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
  *  removes obstacles over top of screen
  *  if new obstacles are needed, adds them
  */
-fn update_obstacles(state: &mut GameState) {
-    let mut expired: Vec<usize> = vec![0];
-    for sprite in state.obstacles.iter_mut() {
-        if sprite.drawable {
+fn update_obstacles(state: &mut GameState){
+    let mut rng = rand::thread_rng();
+    for sprite in state.obstacles.iter_mut(){
+        if sprite.drawable{
             sprite.position.1 -= 1;
 
-            if sprite.position.1 <= 0 {
-                //sprite.position.0 = 40;
+            if sprite.position.1<=0{
+                sprite.position.0 = rng.gen_range(0, WIDTH as i32 -16);
                 sprite.position.1 = HEIGHT as i32 - 16;
                 sprite.drawable = false;
             }
         }
     }
-
-    if state.spawn_timer == 0 {
-        let mut flipped = false;
-        for sprite in state.obstacles.iter_mut() {
-            if !sprite.drawable && !flipped {
+    
+    if state.spawn_timer ==0{
+        let mut flipped =false;
+        for sprite in state.obstacles.iter_mut(){
+            if !sprite.drawable && !flipped{
                 sprite.drawable = true;
-                flipped = true;
+                flipped = rng.gen_range(0,5)<3;
+                if rng.gen_bool(0.2){
+                    sprite.frame.x = 16;
+                }
+                else{
+                    sprite.frame.x = 0;
+                }
+                //TODO: make obstacles not spawn Together
+                //TODO: make diff types of obstacles spawn
             }
         }
-        state.spawn_timer = 20;
+        state.spawn_timer =rng.gen_range(16, 50);
     }
     state.spawn_timer -= 1;
+}
+
+fn update_tiles(state: &mut GameState){
+    state.map.position.1 -= 1;
+    if state.map.position.1.abs() >= TILE_SZ as i32 {
+        state.map.position.1 = 0;
+    }
 }
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
@@ -245,19 +227,24 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     if input.key_held(VirtualKeyCode::Right) {
         // TODO: Add Accel?
         state.player.position.0 += 2;
+        state.player.frame.x = 32;
         // TODO: Maybe Animation?
-        state.player.position.0 += 1;
-    }
-    if input.key_held(VirtualKeyCode::Left) {
+    } else if input.key_held(VirtualKeyCode::Left) {
         // TODO: Add accel?
         state.player.position.0 -= 2;
+        state.player.frame.x = 16;
         // TODO: Maybe Animation?
-        state.player.position.0 -= 1;
+    } else {
+        state.player.frame.x = 0;
     }
+
+    // Scroll the scene
+    update_obstacles(state);
+    update_tiles(state);
+
 
     // TODO: Detect collisions: See if the player is collided with an obstacle
 
     // TODO: Handle collisions: Take damage, speed up, or slow down
 
-    // TODO: Scroll the scene
 }
