@@ -240,6 +240,9 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
         state.player.frame.x = 0;
     }
 
+    // Make sure player stays at same height
+    state.player.position.1 = 20;
+
     // Scroll the scene
     update_obstacles(state);
     update_tiles(state);
