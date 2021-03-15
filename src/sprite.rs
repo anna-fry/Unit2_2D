@@ -2,12 +2,20 @@ use crate::texture::Texture;
 use crate::types::{Rect, Vec2i};
 use std::rc::Rc;
 #[derive(Clone)]
+pub enum Effect{
+    Speedup(usize),
+    Hurt(usize),
+    Nothing
+}
+
+#[derive(Clone)]
 pub struct Sprite {
     image: Rc<Texture>,
     pub frame: Rect, // Maybe better to use a type that can't have a negative origin
     // Or use =animation:Animation= instead of a frame field
     pub position: Vec2i,
     pub drawable: bool,
+    pub collision: Effect
 }
 
 impl Sprite {
@@ -17,6 +25,7 @@ impl Sprite {
             frame,
             position,
             drawable,
+            collision:Effect::Nothing
         }
     }
     pub fn get_dimensions(&self) -> Vec2i {

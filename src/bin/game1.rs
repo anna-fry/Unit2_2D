@@ -17,7 +17,7 @@ use Unit2_2D::{collision::*, health::*, screen::Screen, sprite::*, texture::Text
 struct GameState {
     player: Sprite,
     obstacles: Vec<Sprite>,
-    spawn_timer: usize,
+    spawn_timer: isize,
     scroll_speed: usize,
     map: Tilemap,
     health: HealthStatus,
@@ -52,6 +52,7 @@ fn main() {
     let tex = Rc::new(Texture::with_file(Path::new("content/penguin.png")));
     let tile_tex = Rc::new(Texture::with_file(Path::new("content/Background.png")));
     let health_tex = Rc::new(Texture::with_file(Path::new("content/Heart.png")));
+    let obs_tex = Rc::new(Texture::with_file(Path::new("content/IceTileset.png")));
     let tileset = Rc::new(Tileset::new(
         vec![
             Tile { solid: false },
@@ -73,9 +74,9 @@ fn main() {
             Vec2i(160, 20),
             true,
         ),
-        obstacles: vec![Sprite::new(&tex, Rect{x:0, y:0, w:16, h:16}, Vec2i(100, 0), false); 10],
+        obstacles: vec![Sprite::new(&obs_tex, Rect{x:0, y:0, w:32, h:32}, Vec2i(100, 0), false); 10],
         spawn_timer: 0,
-        scroll_speed: 1,
+        scroll_speed: 3,
         map: Tilemap::new(
             Vec2i(0, 0),
             (10, 10),
@@ -185,27 +186,31 @@ fn update_obstacles(state: &mut GameState){
     let mut rng = rand::thread_rng();
     for sprite in state.obstacles.iter_mut(){
         if sprite.drawable{
-            sprite.position.1 -= 1;
+            sprite.position.1 -= state.scroll_speed as i32;
 
             if sprite.position.1<=0{
-                sprite.position.0 = rng.gen_range(0, WIDTH as i32 -16);
+                sprite.position.0 = rng.gen_range(0, WIDTH as i32/32) *32;
                 sprite.position.1 = HEIGHT as i32 - 16;
                 sprite.drawable = false;
             }
         }
     }
     
-    if state.spawn_timer ==0{
+    if state.spawn_timer <=0{
         let mut flipped =false;
         for sprite in state.obstacles.iter_mut(){
             if !sprite.drawable && !flipped{
                 sprite.drawable = true;
                 flipped = rng.gen_range(0,5)<3;
                 if rng.gen_bool(0.2){
-                    sprite.frame.x = 16;
+                    sprite.frame.x = 32;
+                    sprite.frame.y = 64;
+                    sprite.collision = Effect::Speedup(1);
                 }
                 else{
-                    sprite.frame.x = 0;
+                    sprite.frame.x = 64;
+                    sprite.frame.y = 32;
+                    sprite.collision = Effect::Hurt(1);
                 }
                 //TODO: make obstacles not spawn Together
                 //TODO: make diff types of obstacles spawn
@@ -213,11 +218,11 @@ fn update_obstacles(state: &mut GameState){
         }
         state.spawn_timer =rng.gen_range(16, 50);
     }
-    state.spawn_timer -= 1;
+    state.spawn_timer -= state.scroll_speed as isize;
 }
 
 fn update_tiles(state: &mut GameState){
-    state.map.position.1 -= 1;
+    state.map.position.1 -= state.scroll_speed as i32;
     if state.map.position.1.abs() >= TILE_SZ as i32 {
         state.map.position.1 = 0;
     }
@@ -241,7 +246,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     }
 
     // Make sure player stays at same height
-    state.player.position.1 = 20;
+    state.player.position.1 = 30;
 
     // Scroll the scene
     update_obstacles(state);
@@ -254,5 +259,16 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
 
     // TODO: Handle collisions: Take damage, speed up, or slow down
     restitute(&state.map, &mut state.player, &mut state.contacts);
-
+    match collision_effect(&state.player, &mut state.obstacles){
+        Effect::Hurt(n) => 
+        {   if state.health.lives >=n{
+                state.health.lives -=n;
+                state.scroll_speed =1;}
+            else{
+                state.health.lives =0;
+                state.scroll_speed =0;
+            }},
+        Effect::Speedup(n) => state.scroll_speed +=1,
+        _ => {}
+    }
 }

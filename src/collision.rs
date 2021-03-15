@@ -4,7 +4,7 @@ use std::rc::Rc;
 // // TODO: Compare pos of obstacles and the player from the state and change velocity/health based on collision
 use crate::tiles::*;
 use crate::types::*;
-use crate::{sprite::Sprite, tiles::Tilemap};
+use crate::{sprite::{Sprite,Effect}, tiles::Tilemap};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 enum ColliderID {
@@ -69,6 +69,37 @@ pub fn gather_contacts(
             }
         }
     }
+}
+
+pub fn collision_effect(sprite: &Sprite, obstacles: &mut Vec<Sprite>) -> Effect{
+    let mut effect:Effect = Effect::Nothing;
+    let sprite_rect = Rect {
+        x: sprite.position.0,
+        y: sprite.position.1,
+        w: sprite.get_dimensions().0 as u16,
+        h: sprite.get_dimensions().1 as u16,
+    };
+    for obstacle in obstacles.iter_mut(){
+        let obs_rect = Rect{
+            x: obstacle.position.0,
+            y: obstacle.position.1,
+            w: obstacle.get_dimensions().0 as u16,
+            h: obstacle.get_dimensions().1 as u16,
+        };
+        if Rect::rect_touching(sprite_rect, obs_rect){
+            match obstacle.collision{
+            Effect::Hurt(n) => {
+                obstacle.collision = Effect::Hurt((n.max(1)-1));
+                return Effect::Hurt(n);
+            },
+            Effect::Speedup(n) => {
+                obstacle.collision = Effect::Hurt((n.max(1)-1));
+                effect = Effect::Speedup(n)},
+            _ => {}
+            }
+        }   
+}
+return effect;
 }
 
 pub fn restitute(
