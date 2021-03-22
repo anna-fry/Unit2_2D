@@ -5,7 +5,6 @@ use crate::types::Vec2i;
 use std::rc::Rc;
 // Get tiles from sheet and move them with time steps
 
-pub const TILE_SZ: usize = 32;
 /// A graphical tile, we'll implement Copy since it's tiny
 #[derive(Clone, Copy)]
 pub struct Tile {
@@ -16,6 +15,7 @@ pub struct Tileset {
     // Tile size is a constant, so we can find the tile in the texture using math
     // (assuming the texture is a grid of tiles).
     pub tiles: Vec<Tile>,
+    pub tile_sz: usize,
     texture: Rc<Texture>,
     // In this design, each tileset is a distinct image.
     // Maybe not always the best choice if there aren't many tiles in a tileset!
@@ -34,9 +34,10 @@ impl std::ops::Index<TileID> for Tileset {
 
 impl Tileset {
     /// Create a new tileset
-    pub fn new(tiles: Vec<Tile>, texture: &Rc<Texture>) -> Self {
+    pub fn new(tiles: Vec<Tile>, tile_sz: usize, texture: &Rc<Texture>) -> Self {
         Self {
             tiles,
+            tile_sz,
             texture: Rc::clone(texture),
         }
     }
@@ -44,14 +45,14 @@ impl Tileset {
     fn get_rect(&self, id: TileID) -> Rect {
         let idx = id.0;
         let (w, _h) = self.texture.size();
-        let tw = w / TILE_SZ;
+        let tw = w / self.tile_sz;
         let row = idx / tw;
         let col = idx - (row * tw);
         Rect {
-            x: col as i32 * TILE_SZ as i32,
-            y: row as i32 * TILE_SZ as i32,
-            w: TILE_SZ as u16,
-            h: TILE_SZ as u16,
+            x: col as i32 * self.tile_sz as i32,
+            y: row as i32 * self.tile_sz as i32,
+            w: self.tile_sz as u16,
+            h: self.tile_sz as u16,
         }
     }
     /// Does this tileset have a tile for `id`?
@@ -67,7 +68,7 @@ pub struct Tilemap {
     /// How big it is
     dims: (usize, usize),
     /// Which tileset is used for this tilemap
-    tileset: Rc<Tileset>,
+    pub tileset: Rc<Tileset>,
     /// A row-major grid of tile IDs in tileset
     map: Vec<TileID>,
 }
@@ -94,8 +95,8 @@ impl Tilemap {
 
     pub fn tile_id_at(&self, Vec2i(x, y): Vec2i) -> (TileID, Vec2i) {
         // Translate into map coordinates
-        let x = (x - self.position.0) / TILE_SZ as i32;
-        let y = (y - self.position.1) / TILE_SZ as i32;
+        let x = (x - self.position.0) / self.tileset.tile_sz as i32;
+        let y = (y - self.position.1) / self.tileset.tile_sz as i32;
         assert!(
             x >= 0 && x < self.dims.0 as i32,
             "Tile X coordinate {} out of bounds {}",
@@ -124,20 +125,20 @@ impl Tilemap {
         // The camera combined with out position and size tell us what's visible.
         // leftmost tile: get camera.x into our frame of reference, then divide down to tile units
         // Note that it's also forced inside of 0..self.size.0
-        let left = ((sx-self.position.0) / TILE_SZ as i32).max(0).min(self.dims.0 as i32) as usize;
+        let left = ((sx-self.position.0) / self.tileset.tile_sz as i32).max(0).min(self.dims.0 as i32) as usize;
         // rightmost tile: same deal, but with screen.x + screen.w.
-        let right = ((sx+(sw as i32)-self.position.0) / TILE_SZ as i32).max(0).min(self.dims.0 as i32) as usize;
+        let right = ((sx+(sw as i32)-self.position.0) / self.tileset.tile_sz as i32).max(0).min(self.dims.0 as i32) as usize;
         // ditto top and bot
-        let top = ((sy-self.position.1) / TILE_SZ as i32).max(0).min(self.dims.1 as i32) as usize;
-        let bot = (((sy+(sh as i32)-self.position.1) / TILE_SZ as i32).max(0).min(self.dims.1 as i32) + 1) as usize;
+        let top = ((sy-self.position.1) / self.tileset.tile_sz as i32).max(0).min(self.dims.1 as i32) as usize;
+        let bot = (((sy+(sh as i32)-self.position.1) / self.tileset.tile_sz as i32).max(0).min(self.dims.1 as i32) + 1) as usize;
         // Now draw the tiles we need to draw where we need to draw them.
         // Note that we're zipping up the row index (y) with a slice of the map grid containing the necessary rows so we can avoid making a bounds check for each tile.
         for (y,row) in (top..bot).zip(self.map[(top*self.dims.0)..(bot*self.dims.0)].chunks_exact(self.dims.0)) {
             // We are in tile coordinates at this point so we'll need to translate back to pixel units and world coordinates to draw.
-            let ypx = (y * TILE_SZ) as i32 + self.position.1;
+            let ypx = (y * self.tileset.tile_sz) as i32 + self.position.1;
             // Here we can iterate through the column index and the relevant slice of the row in parallel
             for (x,id) in (left..right).zip(row[left..right].iter()) {
-                let xpx = (x * TILE_SZ) as i32 + self.position.0;
+                let xpx = (x * self.tileset.tile_sz) as i32 + self.position.0;
                 let frame = self.tileset.get_rect(*id);
                 screen.bitblt(&self.tileset.texture, frame, Vec2i(xpx,ypx));
             }
