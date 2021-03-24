@@ -15,7 +15,7 @@ pub struct Tile {
 pub struct Tileset {
     // Tile size is a constant, so we can find the tile in the texture using math
     // (assuming the texture is a grid of tiles).
-    tiles: Vec<Tile>,
+    pub tiles: Vec<Tile>,
     texture: Rc<Texture>,
     // In this design, each tileset is a distinct image.
     // Maybe not always the best choice if there aren't many tiles in a tileset!
@@ -67,7 +67,7 @@ pub struct Tilemap {
     /// How big it is
     dims: (usize, usize),
     /// Which tileset is used for this tilemap
-    pub tileset: Rc<Tileset>,
+    tileset: Rc<Tileset>,
     /// A row-major grid of tile IDs in tileset
     map: Vec<TileID>,
 }
