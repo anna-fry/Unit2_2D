@@ -218,7 +218,7 @@ fn update_obstacles(state: &mut GameState){
 
 fn update_tiles(state: &mut GameState){
     state.map.position.1 -= 1;
-    if state.map.position.1.abs() >= 16 {
+    if state.map.position.1.abs() >= TILE_SZ as i32 {
         state.map.position.1 = 0;
     }
 }
