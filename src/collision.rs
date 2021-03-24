@@ -20,21 +20,23 @@ pub struct Contact {
 }
 
 // Only looks for collision btw a single sprite and a single tilemap rn
-pub fn gather_contacts(
-    tilemap: &Tilemap,
-    sprite: &Sprite,
-    into: &mut Vec<Contact>,
-) {
+pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, into: &mut Vec<Contact>) {
     // collide mobiles against walls
     // Checks tiles at the corners
     let corners = vec![
         (sprite.position.0, sprite.position.1),
-        (sprite.position.0 + sprite.get_dimensions().0, sprite.position.1),
+        (
+            sprite.position.0 + sprite.get_dimensions().0,
+            sprite.position.1,
+        ),
         (
             sprite.position.0 + sprite.get_dimensions().0,
             sprite.position.1 + sprite.get_dimensions().1,
         ),
-        (sprite.position.0, sprite.position.1 + sprite.get_dimensions().1),
+        (
+            sprite.position.0,
+            sprite.position.1 + sprite.get_dimensions().1,
+        ),
     ];
     for (x, y) in corners {
         if x >= tilemap.position.0
@@ -71,11 +73,7 @@ pub fn gather_contacts(
     }
 }
 
-pub fn restitute(
-    tilemap: &Tilemap,
-    sprite: &mut Sprite,
-    contacts: &mut [Contact],
-) {
+pub fn restitute(tilemap: &Tilemap, sprite: &mut Sprite, contacts: &mut [Contact]) {
     // handle restitution of dynamics against statics wrt contacts.
     // Assuming everything is rectangles
     for contact in contacts {
