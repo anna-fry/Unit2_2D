@@ -15,7 +15,7 @@ pub struct Tile {
 pub struct Tileset {
     // Tile size is a constant, so we can find the tile in the texture using math
     // (assuming the texture is a grid of tiles).
-    pub tiles: Vec<Tile>,
+    tiles: Vec<Tile>,
     texture: Rc<Texture>,
     // In this design, each tileset is a distinct image.
     // Maybe not always the best choice if there aren't many tiles in a tileset!
