@@ -38,9 +38,9 @@ pub fn gather_contacts(
     ];
     for (x, y) in corners {
         if x >= tilemap.position.0
-            && x < tilemap.position.0 + (tilemap.tileset.tile_sz * tilemap.size().0) as i32
+            && x < tilemap.position.0 + (TILE_SZ * tilemap.size().0) as i32
             && y >= tilemap.position.1
-            && y < tilemap.position.1 + (tilemap.tileset.tile_sz * tilemap.size().1) as i32
+            && y < tilemap.position.1 + (TILE_SZ * tilemap.size().1) as i32
         {
             let (tile, pos) = tilemap.tile_at(Vec2i(x, y));
             if tile.solid {
@@ -53,10 +53,10 @@ pub fn gather_contacts(
                 };
                 let rect = Rect {
                     // position on the whole map
-                    x: pos.0 * tilemap.tileset.tile_sz as i32 + tilemap.position.0,
-                    y: pos.1 * tilemap.tileset.tile_sz as i32 + tilemap.position.1,
-                    w: tilemap.tileset.tile_sz as u16,
-                    h: tilemap.tileset.tile_sz as u16,
+                    x: pos.0 * TILE_SZ as i32 + tilemap.position.0,
+                    y: pos.1 * TILE_SZ as i32 + tilemap.position.1,
+                    w: TILE_SZ as u16,
+                    h: TILE_SZ as u16,
                 };
                 let mtv = Rect::rect_displacement(a_rect, rect);
                 if let Some(m) = mtv {
@@ -90,10 +90,10 @@ pub fn restitute(
                     h: sprite.get_dimensions().1 as u16,
                 };
                 let rect = Rect {
-                    x: tile.1 .0 * tilemap.tileset.tile_sz as i32 + tilemap.position.0,
-                    y: tile.1 .1 * tilemap.tileset.tile_sz as i32 + tilemap.position.1,
-                    w: tilemap.tileset.tile_sz as u16,
-                    h: tilemap.tileset.tile_sz as u16,
+                    x: tile.1 .0 * TILE_SZ as i32 + tilemap.position.0,
+                    y: tile.1 .1 * TILE_SZ as i32 + tilemap.position.1,
+                    w: TILE_SZ as u16,
+                    h: TILE_SZ as u16,
                 };
 
                 if Rect::rect_touching(a_rect, rect) {

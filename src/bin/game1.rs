@@ -59,7 +59,6 @@ fn main() {
             Tile { solid: true },
             Tile { solid: true },
         ],
-        32,
         &tile_tex,
     ));
     let mut state = GameState {
