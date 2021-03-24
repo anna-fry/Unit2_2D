@@ -1,8 +1,12 @@
-use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
-use fontdue::Font;
+use fontdue::{
+    layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle},
+    Font, Metrics,
+};
 use pixels::{Pixels, SurfaceTexture};
 use rand::Rng;
-use std::{time::Instant, rc::Rc, collections::HashMap, hash::Hash, path::Path, fs::File, io::Read};
+use std::{
+    collections::HashMap, fs::File, hash::Hash, io::Read, path::Path, rc::Rc, time::Instant,
+};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -10,7 +14,13 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use Unit2_2D::{
-    collision::*, health::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*,
+    collision::*,
+    health::*,
+    screen::{Fonts, Screen},
+    sprite::*,
+    texture::Texture,
+    tiles::*,
+    types::*,
 };
 
 enum GameMode {
@@ -30,7 +40,7 @@ struct GameState {
     map: Tilemap,
     health: HealthStatus,
     contacts: Vec<Contact>,
-    fonts: [Font; 1],
+    fonts: Fonts,
 }
 
 const WIDTH: usize = 320;
@@ -59,7 +69,7 @@ fn main() {
 
     let font = include_bytes!("..\\..\\content\\monogram_font.ttf") as &[u8];
     let fonts = [Font::from_bytes(font, fontdue::FontSettings::default()).unwrap()];
-    // Testing path stuff, pls ignore 
+    // Testing path stuff, pls ignore
     //
     // let font_file = File::open(Path::new("content/monogram_font.ttf")).unwrap();
     // let mut buf = [0; 10304];
@@ -133,7 +143,7 @@ fn main() {
             spacing: 18,
         },
         contacts: vec![],
-        fonts,
+        fonts: Fonts::new(fonts),
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -149,7 +159,7 @@ fn main() {
             let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH, Vec2i(0, 0));
             screen.clear(Rgba(0, 0, 0, 0));
 
-            draw_game(&state, &mut screen);
+            draw_game(&mut state, &mut screen);
 
             // Flip buffers
             if pixels.render().is_err() {
@@ -190,17 +200,25 @@ fn main() {
     });
 }
 
-fn draw_game(state: &GameState, screen: &mut Screen) {
+fn draw_game(state: &mut GameState, screen: &mut Screen) {
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
 
     match state.mode {
         GameMode::Title => {
-            let rasterized = HashMap::new();
             let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
-            layout.reset(&LayoutSettings{x: (WIDTH/2) as f32, y: (HEIGHT/2) as f32, ..LayoutSettings::default()});
-            layout.append(&state.fonts, &TextStyle::new("Hello", 50.0, 0));
-            screen.draw_text(rasterized, &state.fonts[0], &mut layout, Rgba(255, 255, 255, 255));
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 2) as f32,
+                y: (HEIGHT / 2) as f32,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Hello", 50.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
         }
         GameMode::Playing => {
             // TODO: Draw tiles

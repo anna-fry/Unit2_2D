@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
+};
 
 // We can pull in definitions from elsewhere in the crate!
 use crate::sprite::Sprite;
@@ -8,6 +11,22 @@ use fontdue::{
     layout::{GlyphRasterConfig, Layout},
     Font, Metrics,
 };
+use rand::random;
+
+const NUM_FONTS: usize = 1;
+
+pub struct Fonts {
+    pub rasterized: HashMap<u64, (Metrics, Vec<u8>)>,
+    pub font_list: [Font; NUM_FONTS],
+}
+impl Fonts {
+    pub fn new(font_list: [Font; NUM_FONTS]) -> Self {
+        Self {
+            rasterized: HashMap::new(),
+            font_list,
+        }
+    }
+}
 pub struct Screen<'fb> {
     framebuffer: &'fb mut [u8],
     width: usize,
@@ -128,14 +147,16 @@ impl<'fb> Screen<'fb> {
     }
     pub fn draw_text(
         &mut self,
-        mut rasterized: HashMap<GlyphRasterConfig, (Metrics, Vec<u8>)>,
+        rasterized: &mut HashMap<u64, (Metrics, Vec<u8>)>,
         font: &Font,
         layout: &mut Layout,
         col: Rgba,
     ) {
+        let mut h = DefaultHasher::new();
         for glyph in layout.glyphs() {
+            glyph.key.hash(&mut h);
             let (_metrics, bitmap) = rasterized
-                .entry(glyph.key)
+                .entry(h.finish())
                 .or_insert_with(|| font.rasterize(glyph.key.c, glyph.key.px));
 
             let col = [col.0, col.1, col.2, col.3];
@@ -145,15 +166,21 @@ impl<'fb> Screen<'fb> {
             let y0 = (glyph.y as i32 - self.position.1) as usize;
             let x1 = (glyph.x as i32 - self.position.0) as usize + glyph.width;
             let y1 = (glyph.y as i32 - self.position.1) as usize + glyph.height;
-                for (j, row) in self.framebuffer[(y0 * pitch)..(y1 * pitch)].chunks_exact_mut(pitch).enumerate() {
-                    for (i, p) in row[(x0 * depth)..(x1 * depth)].chunks_exact_mut(depth).enumerate() {
-                        let mut c = [0; 4];
-                        if bitmap[j * glyph.width + i] != 0 {
-                            c = col;
-                        }
-                        p.copy_from_slice(&c);
+            for (j, row) in self.framebuffer[(y0 * pitch)..(y1 * pitch)]
+                .chunks_exact_mut(pitch)
+                .enumerate()
+            {
+                for (i, p) in row[(x0 * depth)..(x1 * depth)]
+                    .chunks_exact_mut(depth)
+                    .enumerate()
+                {
+                    let mut c = [0; 4];
+                    if bitmap[j * glyph.width + i] != 0 {
+                        c = col;
                     }
+                    p.copy_from_slice(&c);
                 }
+            }
             // let depth = self.depth;
             // let src_pitch = metrics.width;
             // let dst_pitch = self.width * self.depth;
