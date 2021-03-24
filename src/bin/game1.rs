@@ -5,7 +5,7 @@ use fontdue::{
 use pixels::{Pixels, SurfaceTexture};
 use rand::Rng;
 use std::{
-    collections::HashMap, fs::File, hash::Hash, io::Read, path::Path, rc::Rc, time::Instant,
+    collections::HashMap, fs::read, hash::Hash, path::Path, rc::Rc, time::Instant,
 };
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
@@ -67,15 +67,8 @@ fn main() {
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture).unwrap()
     };
 
-    let font = include_bytes!("..\\..\\content\\monogram_font.ttf") as &[u8];
+    let font: &[u8] = &read(Path::new("content/monogram_font.ttf")).unwrap();
     let fonts = [Font::from_bytes(font, fontdue::FontSettings::default()).unwrap()];
-    // Testing path stuff, pls ignore
-    //
-    // let font_file = File::open(Path::new("content/monogram_font.ttf")).unwrap();
-    // let mut buf = [0; 10304];
-    // font_file.read(&mut buf);
-    // let font = &buf;
-    // let fonts = [Font::from_bytes(font, fontdue::FontSettings::default()).unwrap()];
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/penguin.png")));
