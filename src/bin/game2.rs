@@ -13,7 +13,15 @@ use Unit2_2D::{collision::*, health::*, screen::Screen, sprite::*, texture::Text
 
 type Level = (Tilemap, Vec<Sprite>);
 
+enum GameMode {
+    Title,
+    Map,
+    Fight,
+    GameOver,
+}
+
 struct GameState {
+    mode: GameMode,
     player: Sprite,
     // TODO: Add in a way to keep track of the enemies for each level
     // Change this maybe? Hearts vs health bar
@@ -224,6 +232,7 @@ fn main() {
     ];
 
     let mut state = GameState {
+        mode: GameMode::Title,
         player: Sprite::new(
             &tex,
             Rect {
@@ -310,65 +319,89 @@ fn draw_game(state: &GameState, screen: &mut Screen, levels: &Vec<Level>) {
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
 
-    // TODO: Draw tiles
-    levels[state.level].0.draw(screen);
-    for s in levels[state.level].1.iter() {
-        screen.draw_sprite(&s);
+    match state.mode {
+        GameMode::Title => {
+            // TODO: Draw Title Screen
+        }
+        GameMode::Map => {
+            levels[state.level].0.draw(screen);
+            for s in levels[state.level].1.iter() {
+                screen.draw_sprite(&s);
+            }
+            screen.draw_sprite(&state.player);
+        }
+        GameMode::Fight => {
+            // TODO: Render the fight screen
+        }
+        GameMode::GameOver => {
+            // TODO: Create game over screen
+        },
     }
-    // TODO: Draw Sprites
-    screen.draw_sprite(&state.player);
 
 }
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, levels: &Vec<Level>) {
-    // Player control goes here
 
-    if input.key_held(VirtualKeyCode::Right) {
-        // TODO: Add Accel?
-        state.player.position.0 += 2;
-        state.player.frame.x = 32;
-        // TODO: Maybe Animation?
-    } else if input.key_held(VirtualKeyCode::Left) {
-        // TODO: Add accel?
-        state.player.position.0 -= 2;
-        state.player.frame.x = 16;
-        // TODO: Maybe Animation?
-    } else {
-        state.player.frame.x = 0;
-    }
-    if input.key_held(VirtualKeyCode::Up) {
-        // TODO: Add Accel?
-        state.player.position.1 -= 2;
-        // TODO: Maybe Animation?
-    } else if input.key_held(VirtualKeyCode::Down) {
-        // TODO: Add accel?
-        state.player.position.1 += 2;
-        // TODO: Maybe Animation?
-    }
+    match state.mode {
+        GameMode::Title => {
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Map;
+            }
+        }
+        GameMode::Map => {
+            if input.key_held(VirtualKeyCode::Right) {
+                // TODO: Add Accel?
+                state.player.position.0 += 2;
+                state.player.frame.x = 32;
+                // TODO: Maybe Animation?
+            } else if input.key_held(VirtualKeyCode::Left) {
+                // TODO: Add accel?
+                state.player.position.0 -= 2;
+                state.player.frame.x = 16;
+                // TODO: Maybe Animation?
+            } else {
+                state.player.frame.x = 0;
+            }
+            if input.key_held(VirtualKeyCode::Up) {
+                // TODO: Add Accel?
+                state.player.position.1 -= 2;
+                // TODO: Maybe Animation?
+            } else if input.key_held(VirtualKeyCode::Down) {
+                // TODO: Add accel?
+                state.player.position.1 += 2;
+                // TODO: Maybe Animation?
+            }
 
-    // Detect collisions: See if the player is collided with an obstacle
-    state.contacts.clear();
-    gather_contacts(&levels[state.level].0, &state.player, &mut state.contacts);
+            // Detect collisions: See if the player is collided with an obstacle
+            state.contacts.clear();
+            gather_contacts(&levels[state.level].0, &state.player, &mut state.contacts);
 
-    restitute(&levels[state.level].0, &mut state.player, &mut state.contacts);
+            restitute(&levels[state.level].0, &mut state.player, &mut state.contacts);
 
-    if state.player.position.0 < 192 && state.player.position.0 > 160 && state.player.position.1 < 32 {
-        state.level += 1;
-        state.player.position = Vec2i(128, 352);
-        state.window = Vec2i(0, 128)
-    }
+            if state.player.position.0 < 192 && state.player.position.0 > 160 && state.player.position.1 < 32 {
+                state.level += 1;
+                state.player.position = Vec2i(128, 352);
+                state.window = Vec2i(0, 128)
+            }
 
-    if state.player.position.1 > (state.window.1 + HEIGHT as i32 - 17)  {
-        state.window.1 += 2;
-        if state.window.1 > HEIGHT as i32*2 {
-            state.window.1 = HEIGHT as i32*2;
+            if state.player.position.1 > (state.window.1 + HEIGHT as i32 - 17)  {
+                state.window.1 += 2;
+                if state.window.1 > HEIGHT as i32*2 {
+                    state.window.1 = HEIGHT as i32*2;
+                }
+            }
+            if state.player.position.1 < (state.window.1 + 16) {
+                state.window.1 -= 2;
+                if state.window.1 < 0 {
+                    state.window.1 = 0;
+                }
+            }
+        }
+        GameMode::Fight => {
+            // TODO: Read in attack choices and do state logic
+        }
+        GameMode::GameOver => {
+            // TODO: Reset Game
         }
     }
-    if state.player.position.1 < (state.window.1 + 16) {
-        state.window.1 -= 2;
-        if state.window.1 < 0 {
-            state.window.1 = 0;
-        }
-    }
-
 }
