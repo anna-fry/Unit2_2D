@@ -36,7 +36,7 @@ fn main() {
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
-            .with_title("Stop the Spread")
+            .with_title("Title")
             .with_inner_size(size)
             .with_min_inner_size(size)
             .with_resizable(false)
@@ -51,6 +51,7 @@ fn main() {
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/bob.png")));
+    let enemy_tex = Rc::new(Texture::with_file(Path::new("content/alex.png")));
     let level1_tex = Rc::new(Texture::with_file(Path::new("content/level1.png")));
     let level2_tex = Rc::new(Texture::with_file(Path::new("content/level2.png")));
     let level3_tex = Rc::new(Texture::with_file(Path::new("content/level3.png")));
@@ -126,6 +127,17 @@ fn main() {
             },
             Vec2i(160, 0),
             true,
+        ),
+        Sprite::new(
+            &enemy_tex,
+            Rect {
+                x: 48,
+                y: 8,
+                w: 16,
+                h: 24,
+            },
+            Vec2i(168, 48),
+            true,
         )] ),
         (Tilemap::new(
             Vec2i(0, 0),
@@ -155,6 +167,17 @@ fn main() {
                 h: 64,
             },
             Vec2i(160, 0),
+            true,
+        ),
+        Sprite::new(
+            &enemy_tex,
+            Rect {
+                x: 48,
+                y: 8,
+                w: 16,
+                h: 24,
+            },
+            Vec2i(168, 48),
             true,
         )] ),
         (Tilemap::new(
@@ -186,6 +209,17 @@ fn main() {
             },
             Vec2i(160, 0),
             true,
+        ),
+        Sprite::new(
+            &enemy_tex,
+            Rect {
+                x: 48,
+                y: 8,
+                w: 16,
+                h: 24,
+            },
+            Vec2i(168, 48),
+            true,
         )] ),
     ];
 
@@ -198,7 +232,7 @@ fn main() {
                 w: 16,
                 h: 24,
             },
-            Vec2i(128, 224),
+            Vec2i(136, 224),
             true,
         ),
         health: HealthStatus{
