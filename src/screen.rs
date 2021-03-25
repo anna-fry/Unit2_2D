@@ -2,31 +2,18 @@ use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
 };
+use fontdue::{
+    layout::{GlyphRasterConfig, Layout},
+    Font, Metrics,
+};
 
 // We can pull in definitions from elsewhere in the crate!
 use crate::sprite::Sprite;
 use crate::texture::Texture;
 use crate::types::{Rect, Rgba, Vec2i};
-use fontdue::{
-    layout::{GlyphRasterConfig, Layout},
-    Font, Metrics,
-};
+
 use rand::random;
 
-const NUM_FONTS: usize = 1;
-
-pub struct Fonts {
-    pub rasterized: HashMap<u64, (Metrics, Vec<u8>)>,
-    pub font_list: [Font; NUM_FONTS],
-}
-impl Fonts {
-    pub fn new(font_list: [Font; NUM_FONTS]) -> Self {
-        Self {
-            rasterized: HashMap::new(),
-            font_list,
-        }
-    }
-}
 pub struct Screen<'fb> {
     framebuffer: &'fb mut [u8],
     width: usize,
@@ -106,6 +93,32 @@ impl<'fb> Screen<'fb> {
             }
         }
     }
+
+    pub fn empty_rect(&mut self, r: Rect, line_width: usize, col: Rgba) {
+        // Note: line thickness goes inward
+        assert!(line_width < r.w as usize);
+        assert!(line_width < r.h as usize);
+        let c = [col.0, col.1, col.2, col.3];
+        // Here's the translation
+        let r = Rect {
+            x: r.x - self.position.0,
+            y: r.y - self.position.1,
+            ..r
+        };
+
+        let x0 = r.x.max(0).min(self.width as i32);
+        let x1 = (r.x + r.w as i32).max(0).min(self.width as i32);
+        let y0 = r.y.max(0).min(self.height as i32);
+        let y1 = (r.y + r.h as i32).max(0).min(self.height as i32);
+
+        for i in 0..line_width {
+            self.line(Vec2i(x0, y0 + i as i32), Vec2i(x1, y0 + i as i32), col);
+            self.line(Vec2i(x1 - i as i32, y0 + i as i32), Vec2i(x1 - i as i32, y1), col);
+            self.line(Vec2i(x0, y1 - i as i32), Vec2i(x1, y1 - i as i32), col);
+            self.line(Vec2i(x0 + i as i32, y0), Vec2i(x0 + i as i32, y1), col);
+        }
+    }
+
     pub fn line(&mut self, Vec2i(x0, y0): Vec2i, Vec2i(x1, y1): Vec2i, col: Rgba) {
         let col = [col.0, col.1, col.2, col.3];
         // translate translate
@@ -145,6 +158,18 @@ impl<'fb> Screen<'fb> {
             }
         }
     }
+
+    /**
+    * Draws text on the screen
+    * 
+    * Params: 
+    *   - rasterized: a HashMap of already rasterized glyphs
+    *   - font: the font to use
+    *   - layout: layout to draw
+    *   - col: color of text
+    *
+    * Note: Cuts off text that does not fit in the screen
+    **/
     pub fn draw_text(
         &mut self,
         rasterized: &mut HashMap<u64, (Metrics, Vec<u8>)>,
@@ -153,6 +178,7 @@ impl<'fb> Screen<'fb> {
         col: Rgba,
     ) {
         let mut h = DefaultHasher::new();
+        // hash the glyph for the key
         for glyph in layout.glyphs() {
             glyph.key.hash(&mut h);
             let (_metrics, bitmap) = rasterized
@@ -166,7 +192,8 @@ impl<'fb> Screen<'fb> {
             let y0 = (glyph.y as i32 - self.position.1) as usize;
             let x1 = (glyph.x as i32 - self.position.0) as usize + glyph.width;
             let y1 = (glyph.y as i32 - self.position.1) as usize + glyph.height;
-            for (j, row) in self.framebuffer[(y0 * pitch)..(y1 * pitch)]
+            if x1 < self.width && y1 < self.height {
+                for (j, row) in self.framebuffer[(y0 * pitch)..(y1 * pitch)]
                 .chunks_exact_mut(pitch)
                 .enumerate()
             {
@@ -174,46 +201,12 @@ impl<'fb> Screen<'fb> {
                     .chunks_exact_mut(depth)
                     .enumerate()
                 {
-                    let mut c = [0; 4];
                     if bitmap[j * glyph.width + i] != 0 {
-                        c = col;
+                        p.copy_from_slice(&col);
                     }
-                    p.copy_from_slice(&c);
                 }
             }
-            // let depth = self.depth;
-            // let src_pitch = metrics.width;
-            // let dst_pitch = self.width * self.depth;
-            // let to_x = metrics.xmin - self.position.0;
-            // let to_y = metrics.ymin - self.position.1;
-            // let y_skip = to_y.max(0) - to_y;
-            // let x_skip = to_x.max(0) - to_x;
-            // let y_count = (to_y + metrics.height as i32).min(self.height as i32) - to_y;
-            // let x_count = (to_x + metrics.width as i32).min(self.width as i32) - to_x;
-            // for (row_a, row_b) in bitmap
-            //     [(src_pitch * (y_skip) as usize)..(src_pitch * (y_count) as usize)]
-            //     .chunks_exact(src_pitch)
-            //     .zip(
-            //         self.framebuffer[(dst_pitch * (to_y + y_skip) as usize)
-            //             ..(dst_pitch * (to_y + y_count) as usize)]
-            //             .chunks_exact_mut(dst_pitch),
-            //     )
-            // {
-            //     let to_cols = row_b
-            //         [(depth * (to_x + x_skip) as usize)..(depth * (to_x + x_count) as usize)]
-            //         .chunks_exact_mut(depth);
-            //     let from_cols = row_a[(depth * (x_skip) as usize)..(depth * (x_count) as usize)]
-            //         .chunks_exact(depth);
-            //     // Composite over, assume premultiplied rgba8888
-            //     for (to, from) in to_cols.zip(from_cols) {
-            //         let ta = to[3] as f32 / 255.0;
-            //         let fa = from[3] as f32 / 255.0;
-            //         for i in 0..3 {
-            //             to[i] = from[i].saturating_add((to[i] as f32 * (1.0 - fa)).round() as u8);
-            //         }
-            //         to[3] = ((fa + ta * (1.0 - fa)) * 255.0).round() as u8;
-            //     }
-            // }
+            }
         }
     }
 

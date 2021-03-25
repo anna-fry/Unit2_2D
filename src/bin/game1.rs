@@ -1,12 +1,10 @@
 use fontdue::{
     layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle},
-    Font, Metrics,
+    Font,
 };
 use pixels::{Pixels, SurfaceTexture};
 use rand::Rng;
-use std::{
-    collections::HashMap, fs::read, hash::Hash, path::Path, rc::Rc, time::Instant,
-};
+use std::{fs::read, path::Path, rc::Rc, time::Instant};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -16,11 +14,12 @@ use winit_input_helper::WinitInputHelper;
 use Unit2_2D::{
     collision::*,
     health::*,
-    screen::{Fonts, Screen},
+    screen::Screen,
     sprite::*,
     texture::Texture,
     tiles::*,
     types::*,
+    text::*,
 };
 
 enum GameMode {
@@ -194,24 +193,52 @@ fn main() {
 }
 
 fn draw_game(state: &mut GameState, screen: &mut Screen) {
+    // Note: I had to make state mut to change the rasterized hashmap as needed
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
 
     match state.mode {
         GameMode::Title => {
+            // draws menu screen
+            state.map.draw(screen);
+
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+
+            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+
             let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
             layout.reset(&LayoutSettings {
-                x: (WIDTH / 2) as f32,
-                y: (HEIGHT / 2) as f32,
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 6) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("Hello", 50.0, 0));
+            layout.append(&state.fonts.font_list, &TextStyle::new("PENGUIN\nSLEDDING", 45.0, 0));
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
                 Rgba(255, 255, 255, 255),
             );
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 2) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to start", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+
         }
         GameMode::Playing => {
             // TODO: Draw tiles
@@ -223,7 +250,47 @@ fn draw_game(state: &mut GameState, screen: &mut Screen) {
             }
             screen.draw_health(&state.health);
         }
-        GameMode::GameOver => (),
+        GameMode::GameOver => {
+            // draws game over screen
+            state.map.draw(screen);
+            
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+
+            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 6) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("GAME\nOVER", 45.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 2) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to play again", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+        },
     }
 }
 /**
@@ -275,7 +342,11 @@ fn update_tiles(state: &mut GameState) {
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     match state.mode {
-        GameMode::Title => {}
+        GameMode::Title => {
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Playing;
+            }
+        }
         GameMode::Playing => {
             // Player control goes here
 
@@ -306,7 +377,30 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
 
             // TODO: Handle collisions: Take damage, speed up, or slow down
             restitute(&state.map, &mut state.player, &mut state.contacts);
+
+            if state.health.lives == 0 {
+                state.mode = GameMode::GameOver;
+            }
         }
-        GameMode::GameOver => (),
+        GameMode::GameOver => {
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Playing;
+                reset_game(state);
+            }
+        },
+    }
+}
+
+/**
+ *  Resets game to a beginning state
+**/
+fn reset_game(state: &mut GameState) {
+    state.player.position = Vec2i(160, 20);
+    state.health.lives = 3;
+    state.contacts.clear();
+    state.spawn_timer = 0;
+
+    for ob in state.obstacles.iter_mut() {
+        ob.drawable = false;
     }
 }
