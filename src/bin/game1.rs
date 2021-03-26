@@ -17,11 +17,13 @@ use Unit2_2D::{collision::*, health::*, screen::Screen, sprite::*, texture::Text
 struct GameState {
     player: Sprite,
     obstacles: Vec<Sprite>,
+    obstacle_maps: Vec<Tilemap>,
     spawn_timer: isize,
     scroll_speed: usize,
     map: Tilemap,
     health: HealthStatus,
     contacts: Vec<Contact>,
+    immunities: Vec<isize>
 }
 
 const WIDTH: usize = 320;
@@ -55,13 +57,90 @@ fn main() {
     let obs_tex = Rc::new(Texture::with_file(Path::new("content/IceTileset.png")));
     let tileset = Rc::new(Tileset::new(
         vec![
-            Tile { solid: false },
-            Tile { solid: false },
-            Tile { solid: true },
-            Tile { solid: true },
+            Tile { solid: false, collide:Effect::Nothing },
+            Tile { solid: false, collide:Effect::Nothing },
+            Tile { solid: true, collide:Effect::Nothing },
+            Tile { solid: true, collide:Effect::Nothing },
         ],
         &tile_tex,
     ));
+    /*
+    let obs_set =Rc::new(Tileset::new(
+        vec![
+            //0: tree top
+            Tile { solid: false, collide:Effect::Hurt(2) },
+            //1: tree side?
+            Tile { solid: false, collide:Effect::Hurt(2)},
+            //2: sign
+            Tile { solid: false, collide:Effect::Nothing},
+            //3: log
+            Tile { solid: false, collide:Effect::Hurt(1)},
+            //4: tree bot
+            Tile { solid: false, collide:Effect::Hurt(2) },
+            //5: small bush
+            Tile { solid: false, collide:Effect::Hurt(1)},
+            //6: rock
+            Tile { solid: false, collide:Effect::Hurt(1) },
+            //7: nothing
+            Tile { solid: false, collide:Effect::Nothing },
+            //8: snow          
+            Tile { solid: false, collide:Effect::Nothing },
+            //9 ice
+            Tile { solid: false, collide:Effect::Speedup(1)},
+            //10 stone
+            Tile { solid: true, collide:Effect::Hurt(1) },
+            //11 brick
+            Tile { solid: true, collide:Effect::Hurt(1) },
+
+
+        ]
+        ,&obs_tex));
+    */
+    let obs_set = Rc::new(Tileset::new(
+        //ice 1
+        vec![
+            //0:active ice
+            Tile { solid: false, collide:Effect::Speedup(1) },
+            //1:used ice
+            Tile { solid: false, collide:Effect::Nothing },
+            //2: active rock
+            Tile { solid: false, collide:Effect::Hurt(1) },
+            //3: tree
+            Tile { solid: false, collide:Effect::Hurt(1) },
+            //4: ground
+            Tile { solid: false, collide:Effect::Nothing },
+            //5: wall
+            Tile { solid: true, collide:Effect::Nothing },
+            //6: nothing
+            Tile { solid: false, collide:Effect::Nothing },
+
+
+        ],
+        &obs_tex));
+    let obstacle_map:Vec<Tilemap> = vec![
+        Tilemap::new(
+        Vec2i(TILE_SZ as i32, 0),
+        (8, 5),
+        &obs_set,
+        vec![6;40]),
+        Tilemap::new(
+            Vec2i(TILE_SZ as i32, 5*TILE_SZ as i32),
+            (8, 5),
+            &obs_set,
+            vec![6;40]),
+        Tilemap::new(
+            Vec2i(TILE_SZ as i32, 10*TILE_SZ as i32),
+            (8, 5),
+            &obs_set,
+            vec![6;40]),
+        Tilemap::new(
+            Vec2i(TILE_SZ as i32, 15*TILE_SZ as i32),
+            (8, 5),
+            &obs_set,
+            vec![6;40])];
+
+
+    
     let mut state = GameState {
         player: Sprite::new(
             &tex,
@@ -94,6 +173,7 @@ fn main() {
                 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
             ],
         ),
+        obstacle_maps: obstacle_map,
         health: HealthStatus{
             image: Rc::clone(&health_tex),
             lives: 3,
@@ -103,10 +183,11 @@ fn main() {
                 w:16,
                 h:16
             },
-            start: Vec2i(260, 15),
-            spacing: 18
+            start: Vec2i(300, 15),
+            spacing: -18
         },
         contacts: vec![],
+        immunities:vec![0,0]
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -169,11 +250,14 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
 
     // TODO: Draw tiles
     state.map.draw(screen);
+    for map in state.obstacle_maps.iter(){
+        map.draw(screen);
+    }
     // TODO: Draw Sprites
     screen.draw_sprite(&state.player);
-    for sprite in state.obstacles.iter() {
-        screen.draw_sprite(sprite);
-    }
+    // for sprite in state.obstacles.iter() {
+    //     screen.draw_sprite(sprite);
+    // }
     screen.draw_health(&state.health);
 }
 /**
@@ -184,48 +268,81 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
  */
 fn update_obstacles(state: &mut GameState){
     let mut rng = rand::thread_rng();
-    for sprite in state.obstacles.iter_mut(){
-        if sprite.drawable{
-            sprite.position.1 -= state.scroll_speed as i32;
+    let height:i32 = TILE_SZ as i32 * 5 ;
+    for obs_map in state.obstacle_maps.iter_mut(){
+        obs_map.position.1 -= state.scroll_speed as i32;
+        //print!("\n pos: {}", obs_map.position.1);
+        if obs_map.position.1 + height <=0{
+            //offscreen, generate next segment
+            obs_map.position.1 += height * 4;
+            let mut map:Vec<usize> = vec![6;40];
+            for row in 0..4{
+                let mut num_obstacles = rng.gen_range(0,4);
+                let mut col = 0;
+                while num_obstacles >0{
+                    col = rng.gen_range(col, 8-num_obstacles);
+                    if rng.gen_bool(0.5){
+                        //stone
+                        map[row*8 + col] = 2;
+                    }
+                    else{
+                        //ice
+                        map[row*8+col] = 0;
+                    }
+                    num_obstacles -=1;
+                }
+            }
+            print!("\n old:{:?}", obs_map.map);
+            obs_map.new_map(map);
+            print!("\n new:{:?}", obs_map.map);
 
-            if sprite.position.1<=0{
-                sprite.position.0 = rng.gen_range(0, WIDTH as i32/32) *32;
-                sprite.position.1 = HEIGHT as i32 - 16;
-                sprite.drawable = false;
-            }
+        
         }
     }
+
+    // for sprite in state.obstacles.iter_mut(){
+    //     if sprite.drawable{
+    //         sprite.position.1 -= state.scroll_speed as i32;
+
+    //         if sprite.position.1<=0{
+    //             sprite.position.0 = rng.gen_range(1, WIDTH as i32/32) *31;
+    //             sprite.position.1 = HEIGHT as i32 - 16;
+    //             sprite.drawable = false;
+    //         }
+    //     }
+    // }
     
-    if state.spawn_timer <=0{
-        let mut flipped =false;
-        for sprite in state.obstacles.iter_mut(){
-            if !sprite.drawable && !flipped{
-                sprite.drawable = true;
-                flipped = rng.gen_range(0,5)<3;
-                if rng.gen_bool(0.2){
-                    sprite.frame.x = 32;
-                    sprite.frame.y = 64;
-                    sprite.collision = Effect::Speedup(1);
-                }
-                else{
-                    sprite.frame.x = 64;
-                    sprite.frame.y = 32;
-                    sprite.collision = Effect::Hurt(1);
-                }
-                //TODO: make obstacles not spawn Together
-                //TODO: make diff types of obstacles spawn
-            }
-        }
-        state.spawn_timer =rng.gen_range(16, 50);
-    }
+    // if state.spawn_timer <=0{
+    //     let mut flipped =false;
+    //     for sprite in state.obstacles.iter_mut(){
+    //         if !sprite.drawable && !flipped{
+    //             sprite.drawable = true;
+    //             flipped = rng.gen_range(0,5)<3;
+    //             if rng.gen_bool(0.2){
+    //                 sprite.frame.x = 32;
+    //                 sprite.frame.y = 64;
+    //                 sprite.collision = Effect::Speedup(1);
+    //             }
+    //             else{
+    //                 sprite.frame.x = 64;
+    //                 sprite.frame.y = 32;
+    //                 sprite.collision = Effect::Hurt(1);
+    //             }
+    //             //TODO: make obstacles not spawn Together
+    //             //TODO: make diff types of obstacles spawn
+    //         }
+    //     }
+    //     state.spawn_timer =rng.gen_range(16, 50);
+    // }
     state.spawn_timer -= state.scroll_speed as isize;
 }
 
 fn update_tiles(state: &mut GameState){
     state.map.position.1 -= state.scroll_speed as i32;
-    if state.map.position.1.abs() >= TILE_SZ as i32 {
+    if state.map.position.1.abs() >= TILE_SZ  as i32 {
         state.map.position.1 = 0;
     }
+
 }
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
@@ -256,19 +373,33 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
     // Detect collisions: See if the player is collided with an obstacle
     state.contacts.clear();
     gather_contacts(&state.map, &state.player, &mut state.contacts);
-
+    for vec in state.obstacle_maps.iter(){
+        gather_contacts(&vec, &state.player, &mut state.contacts);
+    }
     // TODO: Handle collisions: Take damage, speed up, or slow down
-    restitute(&state.map, &mut state.player, &mut state.contacts);
-    match collision_effect(&state.player, &mut state.obstacles){
+    state.immunities[0] -= 1;
+    state.immunities[1] -=1;
+    match restitute(&state.map, &mut state.player, &mut state.contacts){
+    //match collision_effect(&state.player, &mut state.obstacles){
         Effect::Hurt(n) => 
-        {   if state.health.lives >=n{
-                state.health.lives -=n;
-                state.scroll_speed =1;}
-            else{
-                state.health.lives =0;
-                state.scroll_speed =0;
-            }},
-        Effect::Speedup(n) => state.scroll_speed +=1,
+        {   if state.immunities[0]<=0{
+                if state.health.lives >n{
+                    state.immunities[0] =48;
+                    state.health.lives -=n;
+                    state.scroll_speed =1;}
+                else{
+                    //TODO: make this an end of game
+                    state.health.lives =0;
+                    state.scroll_speed =0;
+            }
+        }
+    },
+        Effect::Speedup(n) => {
+            if state.immunities[1] <=0{
+                state.scroll_speed +=n;
+                state.immunities[1] = 48;
+            }
+            },
         _ => {}
     }
 }

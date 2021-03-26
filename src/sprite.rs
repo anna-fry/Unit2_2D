@@ -1,12 +1,7 @@
 use crate::texture::Texture;
-use crate::types::{Rect, Vec2i};
+use crate::types::{Rect, Vec2i, Effect};
 use std::rc::Rc;
-#[derive(Clone)]
-pub enum Effect{
-    Speedup(usize),
-    Hurt(usize),
-    Nothing
-}
+
 
 #[derive(Clone)]
 pub struct Sprite {

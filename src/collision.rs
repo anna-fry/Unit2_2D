@@ -4,7 +4,7 @@ use std::rc::Rc;
 // // TODO: Compare pos of obstacles and the player from the state and change velocity/health based on collision
 use crate::tiles::*;
 use crate::types::*;
-use crate::{sprite::{Sprite,Effect}, tiles::Tilemap};
+use crate::{sprite::{Sprite}};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 enum ColliderID {
@@ -16,7 +16,8 @@ enum ColliderID {
 pub struct Contact {
     a: ColliderID,
     b: ColliderID,
-    mtv: (i32, i32),
+    mtv: Option<(i32, i32)>,
+    effect: Effect
 }
 
 // Only looks for collision btw a single sprite and a single tilemap rn
@@ -63,9 +64,18 @@ pub fn gather_contacts(
                     into.push(Contact {
                         a: ColliderID::Dynamic(0),
                         b: ColliderID::Static((0, Vec2i(x, y))),
-                        mtv: m,
+                        mtv: Some(m),
+                        effect: tile.collide 
                     });
                 }
+            }
+            else{
+                into.push(Contact {
+                    a: ColliderID::Dynamic(0),
+                    b: ColliderID::Static((0, Vec2i(x, y))),
+                    mtv: None,
+                    effect: tile.collide 
+                });
             }
         }
     }
@@ -80,24 +90,26 @@ pub fn collision_effect(sprite: &Sprite, obstacles: &mut Vec<Sprite>) -> Effect{
         h: sprite.get_dimensions().1 as u16,
     };
     for obstacle in obstacles.iter_mut(){
-        let obs_rect = Rect{
-            x: obstacle.position.0,
-            y: obstacle.position.1,
-            w: obstacle.get_dimensions().0 as u16,
-            h: obstacle.get_dimensions().1 as u16,
-        };
-        if Rect::rect_touching(sprite_rect, obs_rect){
-            match obstacle.collision{
-            Effect::Hurt(n) => {
-                obstacle.collision = Effect::Hurt((n.max(1)-1));
-                return Effect::Hurt(n);
-            },
-            Effect::Speedup(n) => {
-                obstacle.collision = Effect::Hurt((n.max(1)-1));
-                effect = Effect::Speedup(n)},
-            _ => {}
-            }
-        }   
+        if obstacle.drawable{
+            let obs_rect = Rect{
+                x: obstacle.position.0,
+                y: obstacle.position.1,
+                w: obstacle.get_dimensions().0 as u16,
+                h: obstacle.get_dimensions().1 as u16,
+            };
+            if Rect::rect_touching(sprite_rect, obs_rect){
+                match obstacle.collision{
+                Effect::Hurt(n) => {
+                    obstacle.collision = Effect::Nothing;
+                    return Effect::Hurt(n);
+                },
+                Effect::Speedup(n) => {
+                    obstacle.collision = Effect::Nothing;
+                    effect = Effect::Speedup(n)},
+                _ => {}
+                }
+            }   
+    }
 }
 return effect;
 }
@@ -106,11 +118,19 @@ pub fn restitute(
     tilemap: &Tilemap,
     sprite: &mut Sprite,
     contacts: &mut [Contact],
-) {
+) -> Effect {
     // handle restitution of dynamics against statics wrt contacts.
     // Assuming everything is rectangles
+    let mut effect:Effect = Effect::Nothing;
     for contact in contacts {
         // assume dynamic/static collision
+        match contact.effect{
+            Effect::Hurt(n) => {effect = Effect::Hurt(n)},
+            Effect::Speedup(n) => 
+                {if effect == Effect::Nothing {effect = Effect::Speedup(n)}},
+            _ =>{}
+        }
+        if let Some(mtv) = contact.mtv{
         if let ColliderID::Dynamic(i) = contact.a {
             if let ColliderID::Static(si) = contact.b {
                 let tile = tilemap.tile_at(si.1);
@@ -128,26 +148,26 @@ pub fn restitute(
                 };
 
                 if Rect::rect_touching(a_rect, rect) {
-                    if contact.mtv.0 > contact.mtv.1 && contact.mtv.1 != 0 {
+                    if mtv.0 > mtv.1 && mtv.1 != 0 {
                         // move in y direction
                         match a_rect.y.cmp(&rect.y) {
                             std::cmp::Ordering::Greater => {
-                                sprite.position.1 += contact.mtv.1;
+                                sprite.position.1 += mtv.1;
                             }
                             std::cmp::Ordering::Less => {
-                                sprite.position.1 -= contact.mtv.1;
+                                sprite.position.1 -= mtv.1;
                             }
                             std::cmp::Ordering::Equal => (),
                         }
                     //sprite.vy = 0.0;
-                    } else if contact.mtv.0 <= contact.mtv.1 && contact.mtv.0 != 0 {
+                    } else if mtv.0 <= mtv.1 && mtv.0 != 0 {
                         // move in x direction
                         match a_rect.x.cmp(&rect.x) {
                             std::cmp::Ordering::Greater => {
-                                sprite.position.0 += contact.mtv.0;
+                                sprite.position.0 += mtv.0;
                             }
                             std::cmp::Ordering::Less => {
-                                sprite.position.0 -= contact.mtv.0;
+                                sprite.position.0 -= mtv.0;
                             }
                             std::cmp::Ordering::Equal => (),
                         }
@@ -157,4 +177,6 @@ pub fn restitute(
             }
         }
     }
+}
+    effect
 }
