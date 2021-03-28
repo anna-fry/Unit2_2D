@@ -58,18 +58,16 @@ fn main() {
     };
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
-    let tex = Rc::new(Texture::with_file(Path::new("content/bob.png")));
-    let enemy_tex = Rc::new(Texture::with_file(Path::new("content/alex.png")));
-    let level1_tex = Rc::new(Texture::with_file(Path::new("content/level1.png")));
-    let level2_tex = Rc::new(Texture::with_file(Path::new("content/level2.png")));
-    let level3_tex = Rc::new(Texture::with_file(Path::new("content/level3.png")));
+    let tex = Rc::new(Texture::with_file(Path::new("content/dino.png")));
+    let enemy_tex = Rc::new(Texture::with_file(Path::new("content/dinor.png")));
+    let level_tex = Rc::new(Texture::with_file(Path::new("content/dungeon.png")));
     let health_tex = Rc::new(Texture::with_file(Path::new("content/Heart.png")));
     let inside_tex = Rc::new(Texture::with_file(Path::new("content/inside.png")));
-    let tileset1 = Rc::new(Tileset::new(
+    let tileset = Rc::new(Tileset::new(
         {
-            (0..75)
+            (0..64)
             .map(|i| (
-                if i == 11 || i == 20 || i == 10 || i == 13 || i == 71 || i == 70 || i == 23 || i == 30 || i == 33 || i == 50 || i == 52 || i == 53 {
+                if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18  {
                     Tile { solid: true }
                 } else {
                     Tile { solid: false }
@@ -77,168 +75,139 @@ fn main() {
             ))
             .collect()
         },
-        &level1_tex,
-    ));
-    let tileset2 = Rc::new(Tileset::new(
-        {
-            (0..75)
-            .map(|i| (
-                if i == 11 || i == 20 || i == 10 || i == 13 || i == 71 || i == 70 || i == 23 || i == 30 || i == 33 || i == 50 || i == 52 || i == 53 {
-                    Tile { solid: true }
-                } else {
-                    Tile { solid: false }
-                }
-            ))
-            .collect()
-        },
-        &level2_tex,
-    ));
-
-    let tileset3 = Rc::new(Tileset::new(
-        {
-            (0..75)
-            .map(|i| (
-                if i == 11 || i == 20 || i == 10 || i == 13 || i == 71 || i == 70 || i == 23 || i == 30 || i == 33 || i == 50 || i == 52 || i == 53 {
-                    Tile { solid: true }
-                } else {
-                    Tile { solid: false }
-                }
-            ))
-            .collect()
-        },
-        &level3_tex,
+        &level_tex,
     ));
 
     let levels: Vec<Level> = vec![
         (Tilemap::new(
             Vec2i(0, 0),
             (10, 9),
-            &tileset1,
+            &tileset,
             vec![
-                10, 11, 11, 11, 11, 41, 11, 11, 11, 13,
-                20, 22, 21, 22, 21, 41, 21, 22, 21, 23,
-                30, 31, 32, 32, 32, 32, 32, 32, 32, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                50, 52, 52, 70, 41, 71, 52, 52, 52, 53,
+                0, 1, 1, 1, 1, 19, 1, 1, 1, 2,
+                0, 32, 33, 33, 33, 41, 33, 33, 34, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                16, 17, 17, 17, 40, 17, 17, 17, 17, 18,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ],
         ), vec![Sprite::new(
-            &inside_tex,
+            &level_tex,
             Rect {
-                x: 352,
-                y: 768,
+                x: 160,
+                y: 0,
                 w: 32,
                 h: 64,
             },
             Vec2i(160, 0),
             true,
-        ),
-        Sprite::new(
+            ),
+            Sprite::new(
             &enemy_tex,
             Rect {
-                x: 48,
-                y: 8,
-                w: 16,
+                x: 0,
+                y: 0,
+                w: 24,
                 h: 24,
             },
-            Vec2i(168, 48),
+            Vec2i(164, 32),
             true,
         )] ),
         (Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
-            &tileset2,
+            &tileset,
             vec![
-                10, 11, 11, 11, 11, 41, 11, 11, 11, 13,
-                20, 22, 21, 22, 21, 41, 21, 22, 21, 23,
-                30, 31, 32, 32, 32, 32, 32, 32, 32, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                50, 52, 52, 70, 41, 71, 52, 52, 52, 53,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 1, 1, 1, 19, 1, 1, 1, 2,
+                0, 32, 33, 33, 33, 41, 33, 33, 34, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                16, 17, 17, 17, 40, 17, 17, 17, 17, 18,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
             ],
         ), vec![Sprite::new(
-            &inside_tex,
+            &level_tex,
             Rect {
-                x: 352,
-                y: 768,
+                x: 160,
+                y: 0,
                 w: 32,
                 h: 64,
             },
             Vec2i(160, 0),
             true,
-        ),
-        Sprite::new(
+            ),
+            Sprite::new(
             &enemy_tex,
             Rect {
-                x: 48,
-                y: 8,
-                w: 16,
+                x: 0,
+                y: 0,
+                w: 24,
                 h: 24,
             },
-            Vec2i(168, 48),
+            Vec2i(164, 32),
             true,
         )] ),
         (Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
-            &tileset3,
+            &tileset,
             vec![
-                10, 11, 11, 11, 11, 11, 11, 11, 11, 13,
-                20, 22, 21, 22, 21, 22, 21, 22, 21, 23,
-                30, 31, 32, 32, 32, 32, 32, 32, 32, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                30, 41, 42, 42, 42, 42, 42, 42, 42, 33,
-                50, 52, 52, 70, 41, 71, 52, 52, 52, 53,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 30, 41, 33, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 1, 1, 1, 19, 1, 1, 1, 2,
+                0, 32, 33, 33, 33, 41, 33, 33, 34, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
+                16, 17, 17, 17, 40, 17, 17, 17, 17, 18,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
             ],
         ), vec![Sprite::new(
-            &inside_tex,
+            &level_tex,
             Rect {
-                x: 352,
-                y: 768,
+                x: 160,
+                y: 0,
                 w: 32,
                 h: 64,
             },
             Vec2i(160, 0),
             true,
-        ),
-        Sprite::new(
+            ),
+            Sprite::new(
             &enemy_tex,
             Rect {
-                x: 48,
-                y: 8,
-                w: 16,
+                x: 0,
+                y: 0,
+                w: 24,
                 h: 24,
             },
-            Vec2i(168, 48),
+            Vec2i(164, 32),
             true,
         )] ),
     ];
 
     let mut state = GameState {
-        mode: GameMode::Title,
+        mode: GameMode::Map,
         player: Sprite::new(
             &tex,
             Rect {
                 x: 0,
-                y: 8,
-                w: 16,
+                y: 0,
+                w: 20,
                 h: 24,
             },
             Vec2i(136, 224),
@@ -352,16 +321,12 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             if input.key_held(VirtualKeyCode::Right) {
                 // TODO: Add Accel?
                 state.player.position.0 += 2;
-                state.player.frame.x = 32;
                 // TODO: Maybe Animation?
             } else if input.key_held(VirtualKeyCode::Left) {
                 // TODO: Add accel?
                 state.player.position.0 -= 2;
-                state.player.frame.x = 16;
                 // TODO: Maybe Animation?
-            } else {
-                state.player.frame.x = 0;
-            }
+            } 
             if input.key_held(VirtualKeyCode::Up) {
                 // TODO: Add Accel?
                 state.player.position.1 -= 2;
@@ -378,7 +343,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
 
             restitute(&levels[state.level].0, &mut state.player, &mut state.contacts);
 
-            if state.player.position.0 < 192 && state.player.position.0 > 160 && state.player.position.1 < 32 {
+            if state.player.position.0 < 192 && state.player.position.0 > 160 && state.player.position.1 < 8 {
                 state.level += 1;
                 state.player.position = Vec2i(128, 352);
                 state.window = Vec2i(0, 128)
