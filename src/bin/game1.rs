@@ -64,38 +64,7 @@ fn main() {
         ],
         &tile_tex,
     ));
-    /*
-    let obs_set =Rc::new(Tileset::new(
-        vec![
-            //0: tree top
-            Tile { solid: false, collide:Effect::Hurt(2) },
-            //1: tree side?
-            Tile { solid: false, collide:Effect::Hurt(2)},
-            //2: sign
-            Tile { solid: false, collide:Effect::Nothing},
-            //3: log
-            Tile { solid: false, collide:Effect::Hurt(1)},
-            //4: tree bot
-            Tile { solid: false, collide:Effect::Hurt(2) },
-            //5: small bush
-            Tile { solid: false, collide:Effect::Hurt(1)},
-            //6: rock
-            Tile { solid: false, collide:Effect::Hurt(1) },
-            //7: nothing
-            Tile { solid: false, collide:Effect::Nothing },
-            //8: snow          
-            Tile { solid: false, collide:Effect::Nothing },
-            //9 ice
-            Tile { solid: false, collide:Effect::Speedup(1)},
-            //10 stone
-            Tile { solid: true, collide:Effect::Hurt(1) },
-            //11 brick
-            Tile { solid: true, collide:Effect::Hurt(1) },
 
-
-        ]
-        ,&obs_tex));
-    */
     let obs_set = Rc::new(Tileset::new(
         //ice 1
         vec![
@@ -113,8 +82,6 @@ fn main() {
             Tile { solid: true, collide:Effect::Nothing },
             //6: nothing
             Tile { solid: false, collide:Effect::Nothing },
-
-
         ],
         &obs_tex));
     let obstacle_map:Vec<Tilemap> = vec![
@@ -292,49 +259,9 @@ fn update_obstacles(state: &mut GameState){
                     num_obstacles -=1;
                 }
             }
-            print!("\n old:{:?}", obs_map.map);
-            obs_map.new_map(map);
-            print!("\n new:{:?}", obs_map.map);
-
-        
+            obs_map.new_map(map);        
         }
     }
-
-    // for sprite in state.obstacles.iter_mut(){
-    //     if sprite.drawable{
-    //         sprite.position.1 -= state.scroll_speed as i32;
-
-    //         if sprite.position.1<=0{
-    //             sprite.position.0 = rng.gen_range(1, WIDTH as i32/32) *31;
-    //             sprite.position.1 = HEIGHT as i32 - 16;
-    //             sprite.drawable = false;
-    //         }
-    //     }
-    // }
-    
-    // if state.spawn_timer <=0{
-    //     let mut flipped =false;
-    //     for sprite in state.obstacles.iter_mut(){
-    //         if !sprite.drawable && !flipped{
-    //             sprite.drawable = true;
-    //             flipped = rng.gen_range(0,5)<3;
-    //             if rng.gen_bool(0.2){
-    //                 sprite.frame.x = 32;
-    //                 sprite.frame.y = 64;
-    //                 sprite.collision = Effect::Speedup(1);
-    //             }
-    //             else{
-    //                 sprite.frame.x = 64;
-    //                 sprite.frame.y = 32;
-    //                 sprite.collision = Effect::Hurt(1);
-    //             }
-    //             //TODO: make obstacles not spawn Together
-    //             //TODO: make diff types of obstacles spawn
-    //         }
-    //     }
-    //     state.spawn_timer =rng.gen_range(16, 50);
-    // }
-    state.spawn_timer -= state.scroll_speed as isize;
 }
 
 fn update_tiles(state: &mut GameState){
