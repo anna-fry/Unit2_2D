@@ -2,7 +2,7 @@ use std::any::Any;
 use std::rc::Rc;
 
 // // TODO: Compare pos of obstacles and the player from the state and change velocity/health based on collision
-use crate::tiles::*;
+use crate::{sprite, tiles::*};
 use crate::types::*;
 use crate::{sprite::Sprite, tiles::Tilemap};
 
@@ -20,7 +20,19 @@ pub struct Contact {
 }
 
 // Only looks for collision btw a single sprite and a single tilemap rn
-pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, into: &mut Vec<Contact>) {
+pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, statics: &[Sprite], into: &mut Vec<Contact>) {
+    // collide the player against other sprites
+    for (bi, b) in statics.iter().enumerate() {
+        if let Some(disp) = Rect::rect_displacement(Rect{ x:sprite.position.0, y: sprite.position.1, w: sprite.frame.w, h: sprite.frame.h }, 
+                                                        Rect{ x:b.position.0, y: b.position.1, w: b.frame.w, h: b.frame.h }) {
+            into.push(Contact {
+                a: ColliderID::Dynamic(0),
+                b: ColliderID::Static((bi, b.position)),
+                mtv: disp,
+            });
+        }
+    }
+
     // collide mobiles against walls
     // Checks tiles at the corners
     let corners = vec![
@@ -73,7 +85,7 @@ pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, into: &mut Vec<Contac
     }
 }
 
-pub fn restitute(tilemap: &Tilemap, sprite: &mut Sprite, contacts: &mut [Contact]) {
+pub fn restitute(tilemap: &Tilemap, sprite: &mut Sprite, statics: &[Sprite], contacts: &mut [Contact]) {
     // handle restitution of dynamics against statics wrt contacts.
     // Assuming everything is rectangles
     for contact in contacts {

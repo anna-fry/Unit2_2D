@@ -1,15 +1,26 @@
+use fontdue::{
+    layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle},
+    Font,
+};
 use pixels::{Pixels, SurfaceTexture};
-use std::path::Path;
-use std::rc::Rc;
-use std::time::Instant;
+use rand::Rng;
+use std::{fs::read, path::Path, rc::Rc, time::Instant};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
-use rand::Rng;
 
-use Unit2_2D::{collision::*, health::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
+use Unit2_2D::{
+    collision::*,
+    health::*,
+    screen::Screen,
+    sprite::*,
+    texture::Texture,
+    tiles::*,
+    types::*,
+    text::*,
+};
 
 type Level = (Tilemap, Vec<Sprite>);
 
@@ -28,9 +39,11 @@ struct GameState {
     health: HealthStatus,
     contacts: Vec<Contact>,
     window: Vec2i,
-    level: usize
+    level: usize,
     // TODO: Add in game state when we have implementation from game 1
     // TODO: Create a way to display the fighting mode
+    passed: bool,
+    fonts: Fonts,
 }
 
 const WIDTH: usize = 320;
@@ -56,6 +69,9 @@ fn main() {
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture).unwrap()
     };
+
+    let font: &[u8] = &read(Path::new("content/monogram_font.ttf")).unwrap();
+    let fonts = [Font::from_bytes(font, fontdue::FontSettings::default()).unwrap()];
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/dino.png")));
@@ -198,10 +214,41 @@ fn main() {
             Vec2i(164, 32),
             true,
         )] ),
+        (Tilemap::new(
+            Vec2i(0, 0),
+            (10, 13),
+            &tileset,
+            vec![
+                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+                30, 30, 0, 1, 1, 1, 2, 30, 30, 30,
+                30, 30, 0, 32, 33, 33, 2, 30, 30, 30,
+                30, 30, 0, 40, 41, 41, 2, 30, 30, 30,
+                30, 30, 0, 40, 41, 41, 2, 30, 30, 30,
+                30, 30, 0, 40, 41, 41, 2, 30, 30, 30,
+                30, 30, 16, 17, 40, 17, 18, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
+                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+            ],
+        ), vec![Sprite::new(
+            &level_tex,
+            Rect {
+                x: 160,
+                y: 64,
+                w: 32,
+                h: 32,
+            },
+            Vec2i(128, 128),
+            true,
+            ),
+        ] ),
     ];
 
     let mut state = GameState {
-        mode: GameMode::Map,
+        mode: GameMode::Title,
         player: Sprite::new(
             &tex,
             Rect {
@@ -228,6 +275,8 @@ fn main() {
         contacts: vec![],
         window: Vec2i(0,0), 
         level: 0,
+        passed: false,
+        fonts: Fonts::new(fonts),
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -243,7 +292,7 @@ fn main() {
             let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH, state.window);
             screen.clear(Rgba(0, 0, 0, 0));
 
-            draw_game(&state, &mut screen, &levels);
+            draw_game(&mut state, &mut screen, &levels);
 
             // Flip buffers
             if pixels.render().is_err() {
@@ -284,13 +333,51 @@ fn main() {
     });
 }
 
-fn draw_game(state: &GameState, screen: &mut Screen, levels: &Vec<Level>) {
+fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
 
     match state.mode {
         GameMode::Title => {
-            // TODO: Draw Title Screen
+            // draws menu screen
+            // levels[state.level].0.draw(screen);
+
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (2*h as u16)/3};
+
+            screen.rect(menu_rect, Rgba(53, 40, 33, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(250, 30, 10, 255));
+
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 6) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("DUNGEONS\nand\nDINOS", 45.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(250, 30, 10, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (2*HEIGHT / 3) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to start", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(250, 30, 10, 255),
+            );
         }
         GameMode::Map => {
             levels[state.level].0.draw(screen);
@@ -339,9 +426,9 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
 
             // Detect collisions: See if the player is collided with an obstacle
             state.contacts.clear();
-            gather_contacts(&levels[state.level].0, &state.player, &mut state.contacts);
+            gather_contacts(&levels[state.level].0, &state.player, &levels[state.level].1, &mut state.contacts);
 
-            restitute(&levels[state.level].0, &mut state.player, &mut state.contacts);
+            restitute(&levels[state.level].0, &mut state.player, &levels[state.level].1, &mut state.contacts);
 
             if state.player.position.0 < 192 && state.player.position.0 > 160 && state.player.position.1 < 8 {
                 state.level += 1;

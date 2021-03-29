@@ -373,10 +373,10 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
 
             // Detect collisions: See if the player is collided with an obstacle
             state.contacts.clear();
-            gather_contacts(&state.map, &state.player, &mut state.contacts);
+            gather_contacts(&state.map, &state.player, &[], &mut state.contacts);
 
             // TODO: Handle collisions: Take damage, speed up, or slow down
-            restitute(&state.map, &mut state.player, &mut state.contacts);
+            restitute(&state.map, &mut state.player, &[], &mut state.contacts);
 
             if state.health.lives == 0 {
                 state.mode = GameMode::GameOver;
