@@ -2,7 +2,7 @@ use std::any::Any;
 use std::rc::Rc;
 
 // // TODO: Compare pos of obstacles and the player from the state and change velocity/health based on collision
-use crate::tiles::*;
+use crate::{sprite, tiles::*};
 use crate::types::*;
 use crate::{sprite::{Sprite}};
 
@@ -21,21 +21,36 @@ pub struct Contact {
 }
 
 // Only looks for collision btw a single sprite and a single tilemap rn
-pub fn gather_contacts(
-    tilemap: &Tilemap,
-    sprite: &Sprite,
-    into: &mut Vec<Contact>,
-) {
+pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, statics: &[Sprite], into: &mut Vec<Contact>) {
+    // collide the player against other sprites
+    for (bi, b) in statics.iter().enumerate() {
+        if let Some(disp) = Rect::rect_displacement(Rect{ x:sprite.position.0, y: sprite.position.1, w: sprite.frame.w, h: sprite.frame.h }, 
+                                                        Rect{ x:b.position.0, y: b.position.1, w: b.frame.w, h: b.frame.h }) {
+            into.push(Contact {
+                a: ColliderID::Dynamic(0),
+                b: ColliderID::Static((bi, b.position)),
+                mtv: Some(disp),
+                effect:Effect::Nothing
+            });
+        }
+    }
+
     // collide mobiles against walls
     // Checks tiles at the corners
     let corners = vec![
         (sprite.position.0, sprite.position.1),
-        (sprite.position.0 + sprite.get_dimensions().0, sprite.position.1),
+        (
+            sprite.position.0 + sprite.get_dimensions().0,
+            sprite.position.1,
+        ),
         (
             sprite.position.0 + sprite.get_dimensions().0,
             sprite.position.1 + sprite.get_dimensions().1,
         ),
-        (sprite.position.0, sprite.position.1 + sprite.get_dimensions().1),
+        (
+            sprite.position.0,
+            sprite.position.1 + sprite.get_dimensions().1,
+        ),
     ];
     for (x, y) in corners {
         if x >= tilemap.position.0
@@ -81,42 +96,11 @@ pub fn gather_contacts(
     }
 }
 
-pub fn collision_effect(sprite: &Sprite, obstacles: &mut Vec<Sprite>) -> Effect{
-    let mut effect:Effect = Effect::Nothing;
-    let sprite_rect = Rect {
-        x: sprite.position.0,
-        y: sprite.position.1,
-        w: sprite.get_dimensions().0 as u16,
-        h: sprite.get_dimensions().1 as u16,
-    };
-    for obstacle in obstacles.iter_mut(){
-        if obstacle.drawable{
-            let obs_rect = Rect{
-                x: obstacle.position.0,
-                y: obstacle.position.1,
-                w: obstacle.get_dimensions().0 as u16,
-                h: obstacle.get_dimensions().1 as u16,
-            };
-            if Rect::rect_touching(sprite_rect, obs_rect){
-                match obstacle.collision{
-                Effect::Hurt(n) => {
-                    obstacle.collision = Effect::Nothing;
-                    return Effect::Hurt(n);
-                },
-                Effect::Speedup(n) => {
-                    obstacle.collision = Effect::Nothing;
-                    effect = Effect::Speedup(n)},
-                _ => {}
-                }
-            }   
-    }
-}
-return effect;
-}
 
 pub fn restitute(
     tilemap: &Tilemap,
-    sprite: &mut Sprite,
+    sprite: &mut Sprite,    
+    statics: &[Sprite],
     contacts: &mut [Contact],
 ) -> Effect {
     // handle restitution of dynamics against statics wrt contacts.

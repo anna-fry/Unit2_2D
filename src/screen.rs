@@ -1,7 +1,19 @@
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
+};
+use fontdue::{
+    layout::{GlyphRasterConfig, Layout},
+    Font, Metrics,
+};
+
 // We can pull in definitions from elsewhere in the crate!
 use crate::sprite::Sprite;
 use crate::texture::Texture;
 use crate::types::{Rect, Rgba, Vec2i};
+
+use rand::random;
+
 pub struct Screen<'fb> {
     framebuffer: &'fb mut [u8],
     width: usize,
@@ -10,24 +22,35 @@ pub struct Screen<'fb> {
     position: Vec2i,
 }
 impl<'fb> Screen<'fb> {
-    pub fn wrap(framebuffer: &'fb mut [u8], width: usize, height: usize, depth: usize, position:Vec2i) -> Self {
+    pub fn wrap(
+        framebuffer: &'fb mut [u8],
+        width: usize,
+        height: usize,
+        depth: usize,
+        position: Vec2i,
+    ) -> Self {
         Self {
             framebuffer,
             width,
             height,
             depth,
-            position
+            position,
         }
     }
     pub fn size(&self) -> (usize, usize) {
         (self.width, self.height)
     }
     pub fn bounds(&self) -> Rect {
-        Rect{x:self.position.0, y:self.position.1, w:self.width as u16, h:self.height as u16}
+        Rect {
+            x: self.position.0,
+            y: self.position.1,
+            w: self.width as u16,
+            h: self.height as u16,
+        }
     }
     // Lots of bounds checks!
     #[inline(always)]
-    pub fn draw_at(&mut self, col: Rgba, Vec2i(x,y) : Vec2i) {
+    pub fn draw_at(&mut self, col: Rgba, Vec2i(x, y): Vec2i) {
         let x = x - self.position.0;
         let y = y - self.position.1;
         // The rest is about the same
@@ -38,9 +61,9 @@ impl<'fb> Screen<'fb> {
         // Now x and y are within framebuffer bounds so go ahead and draw
         let c = [col.0, col.1, col.2, col.3];
         let idx = y * self.width as i32 * self.depth as i32 + x * self.depth as i32;
-        assert!(idx>=0);
+        assert!(idx >= 0);
         let idx = idx as usize;
-        self.framebuffer[idx..(idx+self.depth)].copy_from_slice(&c);
+        self.framebuffer[idx..(idx + self.depth)].copy_from_slice(&c);
     }
     // If we know the primitives in advance we're in much better shape:
     pub fn clear(&mut self, col: Rgba) {
@@ -52,7 +75,11 @@ impl<'fb> Screen<'fb> {
     pub fn rect(&mut self, r: Rect, col: Rgba) {
         let c = [col.0, col.1, col.2, col.3];
         // Here's the translation
-        let r = Rect{x:r.x-self.position.0, y:r.y-self.position.1, ..r};
+        let r = Rect {
+            x: r.x - self.position.0,
+            y: r.y - self.position.1,
+            ..r
+        };
         // And the rest is just the same
         let x0 = r.x.max(0).min(self.width as i32) as usize;
         let x1 = (r.x + r.w as i32).max(0).min(self.width as i32) as usize;
@@ -66,6 +93,32 @@ impl<'fb> Screen<'fb> {
             }
         }
     }
+
+    pub fn empty_rect(&mut self, r: Rect, line_width: usize, col: Rgba) {
+        // Note: line thickness goes inward
+        assert!(line_width < r.w as usize);
+        assert!(line_width < r.h as usize);
+        let c = [col.0, col.1, col.2, col.3];
+        // Here's the translation
+        let r = Rect {
+            x: r.x - self.position.0,
+            y: r.y - self.position.1,
+            ..r
+        };
+
+        let x0 = r.x.max(0).min(self.width as i32);
+        let x1 = (r.x + r.w as i32).max(0).min(self.width as i32);
+        let y0 = r.y.max(0).min(self.height as i32);
+        let y1 = (r.y + r.h as i32).max(0).min(self.height as i32);
+
+        for i in 0..line_width {
+            self.line(Vec2i(x0, y0 + i as i32), Vec2i(x1, y0 + i as i32), col);
+            self.line(Vec2i(x1 - i as i32, y0 + i as i32), Vec2i(x1 - i as i32, y1), col);
+            self.line(Vec2i(x0, y1 - i as i32), Vec2i(x1, y1 - i as i32), col);
+            self.line(Vec2i(x0 + i as i32, y0), Vec2i(x0 + i as i32, y1), col);
+        }
+    }
+
     pub fn line(&mut self, Vec2i(x0, y0): Vec2i, Vec2i(x1, y1): Vec2i, col: Rgba) {
         let col = [col.0, col.1, col.2, col.3];
         // translate translate
@@ -105,8 +158,60 @@ impl<'fb> Screen<'fb> {
             }
         }
     }
+
+    /**
+    * Draws text on the screen
+    * 
+    * Params: 
+    *   - rasterized: a HashMap of already rasterized glyphs
+    *   - font: the font to use
+    *   - layout: layout to draw
+    *   - col: color of text
+    *
+    * Note: Cuts off text that does not fit in the screen
+    **/
+    pub fn draw_text(
+        &mut self,
+        rasterized: &mut HashMap<u64, (Metrics, Vec<u8>)>,
+        font: &Font,
+        layout: &mut Layout,
+        col: Rgba,
+    ) {
+        let mut h = DefaultHasher::new();
+        // hash the glyph for the key
+        for glyph in layout.glyphs() {
+            glyph.key.hash(&mut h);
+            let (_metrics, bitmap) = rasterized
+                .entry(h.finish())
+                .or_insert_with(|| font.rasterize(glyph.key.c, glyph.key.px));
+
+            let col = [col.0, col.1, col.2, col.3];
+            let depth = self.depth;
+            let pitch = self.width * self.depth;
+            let x0 = (glyph.x as i32 - self.position.0) as usize;
+            let y0 = (glyph.y as i32 - self.position.1) as usize;
+            let x1 = (glyph.x as i32 - self.position.0) as usize + glyph.width;
+            let y1 = (glyph.y as i32 - self.position.1) as usize + glyph.height;
+            if x1 < self.width && y1 < self.height {
+                for (j, row) in self.framebuffer[(y0 * pitch)..(y1 * pitch)]
+                .chunks_exact_mut(pitch)
+                .enumerate()
+            {
+                for (i, p) in row[(x0 * depth)..(x1 * depth)]
+                    .chunks_exact_mut(depth)
+                    .enumerate()
+                {
+                    if bitmap[j * glyph.width + i] != 0 {
+                        p.copy_from_slice(&col);
+                    }
+                }
+            }
+            }
+        }
+    }
+
     pub fn bitblt(&mut self, src: &Texture, from: Rect, Vec2i(to_x, to_y): Vec2i) {
-        let (tw,th) = src.size();
+        let (tw, th) = src.size();
         assert!(0 <= from.x);
         assert!(from.x < tw as i32);
         assert!(0 <= from.y);

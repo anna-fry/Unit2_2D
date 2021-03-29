@@ -142,28 +142,46 @@ impl Tilemap {
         (self.tileset[tile.0], tile.1)
     }
 
-    pub fn draw(&self, screen:&mut Screen) {
-        let Rect{x:sx, y:sy, w:sw, h:sh} = screen.bounds();
+    pub fn draw(&self, screen: &mut Screen) {
+        let Rect {
+            x: sx,
+            y: sy,
+            w: sw,
+            h: sh,
+        } = screen.bounds();
         // We'll draw from the topmost/leftmost visible tile to the bottommost/rightmost visible tile.
         // The camera combined with out position and size tell us what's visible.
         // leftmost tile: get camera.x into our frame of reference, then divide down to tile units
         // Note that it's also forced inside of 0..self.size.0
-        let left = ((sx-self.position.0) / TILE_SZ as i32).max(0).min(self.dims.0 as i32) as usize;
-        // rightmost tile: same deal, but with screen.x + screen.w plus a little padding to be sure we draw the rightmost tile even if it's a bit off screen.
-        let right = ((sx+((sw+TILE_SZ as u16) as i32)-self.position.0) / TILE_SZ as i32).max(0).min(self.dims.0 as i32) as usize;
+
+        let left = ((sx - self.position.0) / TILE_SZ as i32)
+            .max(0)
+            .min(self.dims.0 as i32) as usize;
+        // rightmost tile: same deal, but with screen.x + screen.w.
+        let right = ((sx + (sw as i32) - self.position.0) / TILE_SZ as i32)
+            .max(0)
+            .min(self.dims.0 as i32) as usize;
         // ditto top and bot
-        let top = ((sy-self.position.1) / TILE_SZ as i32).max(0).min(self.dims.1 as i32) as usize;
-        let bot = ((sy+((sh+TILE_SZ as u16) as i32)-self.position.1) / TILE_SZ as i32).max(0).min(self.dims.1 as i32) as usize;
+        let top = ((sy - self.position.1) / TILE_SZ as i32)
+            .max(0)
+            .min(self.dims.1 as i32) as usize;
+        let bot = (((sy + (sh as i32) - self.position.1) / TILE_SZ as i32)
+            .max(0)
+            .min(self.dims.1 as i32)
+            + 1) as usize;
+
         // Now draw the tiles we need to draw where we need to draw them.
         // Note that we're zipping up the row index (y) with a slice of the map grid containing the necessary rows so we can avoid making a bounds check for each tile.
-        for (y,row) in (top..bot).zip(self.map[(top*self.dims.0)..(bot*self.dims.0)].chunks_exact(self.dims.0)) {
+        for (y, row) in (top..bot)
+            .zip(self.map[(top * self.dims.0)..(bot * self.dims.0)].chunks_exact(self.dims.0))
+        {
             // We are in tile coordinates at this point so we'll need to translate back to pixel units and world coordinates to draw.
             let ypx = (y * TILE_SZ) as i32 + self.position.1;
             // Here we can iterate through the column index and the relevant slice of the row in parallel
-            for (x,id) in (left..right).zip(row[left..right].iter()) {
+            for (x, id) in (left..right).zip(row[left..right].iter()) {
                 let xpx = (x * TILE_SZ) as i32 + self.position.0;
                 let frame = self.tileset.get_rect(*id);
-                screen.bitblt(&self.tileset.texture, frame, Vec2i(xpx,ypx));
+                screen.bitblt(&self.tileset.texture, frame, Vec2i(xpx, ypx));
             }
         }
     }

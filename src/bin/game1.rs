@@ -1,22 +1,38 @@
+use fontdue::{
+    layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle},
+    Font,
+};
 use pixels::{Pixels, SurfaceTexture};
-use std::path::Path;
-use std::rc::Rc;
-use std::time::Instant;
+use rand::Rng;
+use std::{fs::read, path::Path, rc::Rc, time::Instant};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
-use rand::Rng;
 
-use Unit2_2D::{collision::*, health::*, screen::Screen, sprite::*, texture::Texture, tiles::*, types::*};
+use Unit2_2D::{
+    collision::*,
+    health::*,
+    screen::Screen,
+    sprite::*,
+    texture::Texture,
+    tiles::*,
+    types::*,
+    text::*,
+};
 
+enum GameMode {
+    Title,
+    Playing,
+    GameOver,
+}
 //TODO: Fill out state
 // The State needs to keep track of the player...
 // Add texture when we decide on the texture we want
 struct GameState {
+    mode: GameMode,
     player: Sprite,
-    obstacles: Vec<Sprite>,
     obstacle_maps: Vec<Tilemap>,
     spawn_timer: isize,
     scroll_speed: usize,
@@ -24,6 +40,7 @@ struct GameState {
     health: HealthStatus,
     contacts: Vec<Contact>,
     immunities: Vec<isize>
+    fonts: Fonts,
 }
 
 const WIDTH: usize = 320;
@@ -49,6 +66,9 @@ fn main() {
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture).unwrap()
     };
+
+    let font: &[u8] = &read(Path::new("content/monogram_font.ttf")).unwrap();
+    let fonts = [Font::from_bytes(font, fontdue::FontSettings::default()).unwrap()];
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/penguin.png")));
@@ -109,6 +129,7 @@ fn main() {
 
     
     let mut state = GameState {
+        mode: GameMode::Title,
         player: Sprite::new(
             &tex,
             Rect {
@@ -120,7 +141,6 @@ fn main() {
             Vec2i(160, 20),
             true,
         ),
-        obstacles: vec![Sprite::new(&obs_tex, Rect{x:0, y:0, w:32, h:32}, Vec2i(100, 0), false); 10],
         spawn_timer: 0,
         scroll_speed: 3,
         map: Tilemap::new(
@@ -128,16 +148,10 @@ fn main() {
             (10, 10),
             &tileset,
             vec![
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-                2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0,
+                0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0,
+                0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0,
+                0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
             ],
         ),
         obstacle_maps: obstacle_map,
@@ -145,16 +159,17 @@ fn main() {
             image: Rc::clone(&health_tex),
             lives: 3,
             frame: Rect {
-                x:0,
-                y:0,
-                w:16,
-                h:16
+                x: 0,
+                y: 0,
+                w: 16,
+                h: 16,
             },
             start: Vec2i(300, 15),
             spacing: -18
         },
         contacts: vec![],
         immunities:vec![0,0]
+        fonts: Fonts::new(fonts),
     };
     // How many frames have we simulated
     let mut frame_count: usize = 0;
@@ -170,7 +185,7 @@ fn main() {
             let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH, Vec2i(0, 0));
             screen.clear(Rgba(0, 0, 0, 0));
 
-            draw_game(&state, &mut screen);
+            draw_game(&mut state, &mut screen);
 
             // Flip buffers
             if pixels.render().is_err() {
@@ -200,7 +215,7 @@ fn main() {
             available_time -= DT;
 
             update_game(&mut state, &input, frame_count);
-            
+
             // Increment the frame counter
             frame_count += 1;
         }
@@ -211,21 +226,110 @@ fn main() {
     });
 }
 
-fn draw_game(state: &GameState, screen: &mut Screen) {
+fn draw_game(state: &mut GameState, screen: &mut Screen) {
+    // Note: I had to make state mut to change the rasterized hashmap as needed
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
 
-    // TODO: Draw tiles
-    state.map.draw(screen);
-    for map in state.obstacle_maps.iter(){
-        map.draw(screen);
+
+    match state.mode {
+        GameMode::Title => {
+            // draws menu screen
+            state.map.draw(screen);
+
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+
+            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 6) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("PENGUIN\nSLEDDING", 45.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 2) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to start", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+
+        }
+        GameMode::Playing => {
+            // TODO: Draw tiles
+            state.map.draw(screen);
+            for map in state.obstacle_maps.iter(){
+              map.draw(screen);
+            }
+
+            // TODO: Draw Sprites
+            screen.draw_sprite(&state.player);
+            screen.draw_health(&state.health);
+        }
+        GameMode::GameOver => {
+            // draws game over screen
+            state.map.draw(screen);
+            
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+
+            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 6) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("GAME\nOVER", 45.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 2) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to play again", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+        },
     }
-    // TODO: Draw Sprites
-    screen.draw_sprite(&state.player);
-    // for sprite in state.obstacles.iter() {
-    //     screen.draw_sprite(sprite);
-    // }
-    screen.draw_health(&state.health);
+
+
 }
 /**
  * updates all obstacles on screen:
@@ -233,7 +337,7 @@ fn draw_game(state: &GameState, screen: &mut Screen) {
  *  removes obstacles over top of screen
  *  if new obstacles are needed, adds them
  */
-fn update_obstacles(state: &mut GameState){
+fn update_obstacles(state: &mut GameState) {
     let mut rng = rand::thread_rng();
     let height:i32 = TILE_SZ as i32 * 5 ;
     for obs_map in state.obstacle_maps.iter_mut(){
@@ -269,35 +373,44 @@ fn update_tiles(state: &mut GameState){
     if state.map.position.1.abs() >= TILE_SZ  as i32 {
         state.map.position.1 = 0;
     }
-
 }
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
-    // Player control goes here
+    match state.mode {
+        GameMode::Title => {
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Playing;
+            }
+        }
+        GameMode::Playing => {
+            // Player control goes here
 
-    if input.key_held(VirtualKeyCode::Right) {
-        // TODO: Add Accel?
-        state.player.position.0 += 2;
-        state.player.frame.x = 32;
-        // TODO: Maybe Animation?
-    } else if input.key_held(VirtualKeyCode::Left) {
-        // TODO: Add accel?
-        state.player.position.0 -= 2;
-        state.player.frame.x = 16;
-        // TODO: Maybe Animation?
-    } else {
-        state.player.frame.x = 0;
-    }
-
-    // Make sure player stays at same height
-    state.player.position.1 = 30;
-
-    // Scroll the scene
-    update_obstacles(state);
-    update_tiles(state);
+            if input.key_held(VirtualKeyCode::Right) {
+                // TODO: Add Accel?
+                state.player.position.0 += 2;
+                state.player.frame.x = 32;
+            // TODO: Maybe Animation?
+            } else if input.key_held(VirtualKeyCode::Left) {
+                // TODO: Add accel?
+                state.player.position.0 -= 2;
+                state.player.frame.x = 16;
+            // TODO: Maybe Animation?
+            } else {
+                state.player.frame.x = 0;
+            }
 
 
-    // Detect collisions: See if the player is collided with an obstacle
+            state.player.position.1 = 30;
+
+            // Scroll the scene
+            update_obstacles(state);
+            update_tiles(state);
+
+            // Detect collisions: See if the player is collided with an obstacle
+            state.contacts.clear();
+            gather_contacts(&state.map, &state.player, &[], &mut state.contacts);
+
+            // Detect collisions: See if the player is collided with an obstacle
     state.contacts.clear();
     gather_contacts(&state.map, &state.player, &mut state.contacts);
     for vec in state.obstacle_maps.iter(){
@@ -315,9 +428,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
                     state.health.lives -=n;
                     state.scroll_speed =1;}
                 else{
-                    //TODO: make this an end of game
-                    state.health.lives =0;
-                    state.scroll_speed =0;
+                   state.mode = GameMode::GameOver;
             }
         }
     },
@@ -328,5 +439,28 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
             }
             },
         _ => {}
+          }
+      },
+        GameMode::GameOver => {
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Playing;
+                reset_game(state);
+            }
+        },
+    }
+}
+
+/**
+ *  Resets game to a beginning state
+**/
+fn reset_game(state: &mut GameState) {
+    state.player.position = Vec2i(160, 20);
+    state.health.lives = 3;
+    state.contacts.clear();
+    state.spawn_timer = 0;
+
+    for ob in state.obstacles.iter_mut() {
+        ob.drawable = false;
+
     }
 }
