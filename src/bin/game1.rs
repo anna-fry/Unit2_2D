@@ -39,7 +39,7 @@ struct GameState {
     map: Tilemap,
     health: HealthStatus,
     contacts: Vec<Contact>,
-    immunities: Vec<isize>
+    immunities: Vec<isize>,
     fonts: Fonts,
 }
 
@@ -168,7 +168,7 @@ fn main() {
             spacing: -18
         },
         contacts: vec![],
-        immunities:vec![0,0]
+        immunities:vec![0,0],
         fonts: Fonts::new(fonts),
     };
     // How many frames have we simulated
@@ -412,14 +412,14 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
 
             // Detect collisions: See if the player is collided with an obstacle
     state.contacts.clear();
-    gather_contacts(&state.map, &state.player, &mut state.contacts);
+    gather_contacts(&state.map, &state.player, &[], &mut state.contacts);
     for vec in state.obstacle_maps.iter(){
-        gather_contacts(&vec, &state.player, &mut state.contacts);
+        gather_contacts(&vec, &state.player, &[], &mut state.contacts);
     }
     // TODO: Handle collisions: Take damage, speed up, or slow down
     state.immunities[0] -= 1;
     state.immunities[1] -=1;
-    match restitute(&state.map, &mut state.player, &mut state.contacts){
+    match restitute(&state.map, &mut state.player, &[], &mut state.contacts){
     //match collision_effect(&state.player, &mut state.obstacles){
         Effect::Hurt(n) => 
         {   if state.immunities[0]<=0{
@@ -459,8 +459,8 @@ fn reset_game(state: &mut GameState) {
     state.contacts.clear();
     state.spawn_timer = 0;
 
-    for ob in state.obstacles.iter_mut() {
-        ob.drawable = false;
+    // for ob in state.obstacles.iter_mut() {
+    //     ob.drawable = false;
 
-    }
+    // }
 }

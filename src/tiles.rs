@@ -154,21 +154,20 @@ impl Tilemap {
         // leftmost tile: get camera.x into our frame of reference, then divide down to tile units
         // Note that it's also forced inside of 0..self.size.0
 
-        let left = ((sx - self.position.0) / TILE_SZ as i32)
+        let left = ((sx-self.position.0) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.0 as i32) as usize;
         // rightmost tile: same deal, but with screen.x + screen.w.
-        let right = ((sx + (sw as i32) - self.position.0) / TILE_SZ as i32)
+        let right = ((sx+((sw+TILE_SZ as u16) as i32)-self.position.0) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.0 as i32) as usize;
         // ditto top and bot
-        let top = ((sy - self.position.1) / TILE_SZ as i32)
+        let top = ((sy-self.position.1) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.1 as i32) as usize;
-        let bot = (((sy + (sh as i32) - self.position.1) / TILE_SZ as i32)
+        let bot = ((sy+((sh+TILE_SZ as u16) as i32)-self.position.1) / TILE_SZ as i32)
             .max(0)
-            .min(self.dims.1 as i32)
-            + 1) as usize;
+            .min(self.dims.1 as i32) as usize;
 
         // Now draw the tiles we need to draw where we need to draw them.
         // Note that we're zipping up the row index (y) with a slice of the map grid containing the necessary rows so we can avoid making a bounds check for each tile.
