@@ -1,6 +1,6 @@
 use crate::screen::Screen;
 use crate::texture::Texture;
-use crate::types::Rect;
+use crate::types::{Rect, Effect};
 use crate::types::Vec2i;
 use std::rc::Rc;
 // Get tiles from sheet and move them with time steps
@@ -9,7 +9,8 @@ pub const TILE_SZ: usize = 32;
 /// A graphical tile, we'll implement Copy since it's tiny
 #[derive(Clone, Copy)]
 pub struct Tile {
-    pub solid: bool, // ... any extra data like collision flags or other properties
+    pub solid: bool,
+    pub collide: Effect // ... any extra data like collision flags or other properties
 }
 /// A set of tiles used in multiple Tilemaps
 pub struct Tileset {
@@ -21,7 +22,7 @@ pub struct Tileset {
     // Maybe not always the best choice if there aren't many tiles in a tileset!
 }
 /// Indices into a Tileset
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TileID(usize);
 
 /// Grab a tile with a given ID
@@ -31,6 +32,7 @@ impl std::ops::Index<TileID> for Tileset {
         &self.tiles[id.0]
     }
 }
+
 
 impl Tileset {
     /// Create a new tileset
@@ -61,15 +63,16 @@ impl Tileset {
 }
 
 /// An actual tilemap
+#[derive(Clone)]
 pub struct Tilemap {
     /// Where the tilemap is in space, use your favorite number type here
     pub position: Vec2i,
     /// How big it is
-    dims: (usize, usize),
+    pub dims: (usize, usize),
     /// Which tileset is used for this tilemap
     tileset: Rc<Tileset>,
     /// A row-major grid of tile IDs in tileset
-    map: Vec<TileID>,
+    pub map: Vec<TileID>,
 }
 
 impl Tilemap {
@@ -90,6 +93,27 @@ impl Tilemap {
             tileset: Rc::clone(tileset),
             map: map.into_iter().map(TileID).collect(),
         }
+    }
+
+    pub fn next_room(&self, direction:usize, dims: (usize, usize), map:Vec<usize>) -> Self{
+        let position:Vec2i = match direction{
+            //up, right, down, left
+            0 => {Vec2i(self.position.0, self.position.1 - (self.dims.1 * TILE_SZ) as i32)}
+            1 => {Vec2i(self.position.0 + (self.dims.0 * TILE_SZ) as i32, self.position.1)} 
+            2 => {Vec2i(self.position.0, self.position.1 + (self.dims.1 * TILE_SZ) as i32)}
+            3 => {Vec2i(self.position.0 -(self.dims.0 * TILE_SZ) as i32, self.position.1)}
+            _ => {Vec2i(self.position.0, 100)}
+        };
+        print!("{} ", position.1);
+        Tilemap::new(position, dims, &self.tileset.clone(), map)
+    }
+    pub fn new_map(&mut self,map:Vec<usize>){
+        assert_eq!(self.dims.0 * self.dims.1, map.len(), "Tilemap is the wrong size!");
+        assert!(
+            map.iter().all(|tid| self.tileset.contains(TileID(*tid))),
+            "Tilemap refers to nonexistent tiles"
+        );
+        self.map = map.into_iter().map(TileID).collect();
     }
 
     pub fn tile_id_at(&self, Vec2i(x, y): Vec2i) -> (TileID, Vec2i) {
@@ -129,6 +153,7 @@ impl Tilemap {
         // The camera combined with out position and size tell us what's visible.
         // leftmost tile: get camera.x into our frame of reference, then divide down to tile units
         // Note that it's also forced inside of 0..self.size.0
+
         let left = ((sx - self.position.0) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.0 as i32) as usize;
@@ -144,6 +169,7 @@ impl Tilemap {
             .max(0)
             .min(self.dims.1 as i32)
             + 1) as usize;
+
         // Now draw the tiles we need to draw where we need to draw them.
         // Note that we're zipping up the row index (y) with a slice of the map grid containing the necessary rows so we can avoid making a bounds check for each tile.
         for (y, row) in (top..bot)

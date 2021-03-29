@@ -1,6 +1,8 @@
 use crate::texture::Texture;
-use crate::types::{Rect, Vec2i};
+use crate::types::{Rect, Vec2i, Effect};
 use std::rc::Rc;
+
+
 #[derive(Clone)]
 pub struct Sprite {
     image: Rc<Texture>,
@@ -8,6 +10,7 @@ pub struct Sprite {
     // Or use =animation:Animation= instead of a frame field
     pub position: Vec2i,
     pub drawable: bool,
+    pub collision: Effect
 }
 
 impl Sprite {
@@ -17,6 +20,7 @@ impl Sprite {
             frame,
             position,
             drawable,
+            collision:Effect::Nothing
         }
     }
     pub fn get_dimensions(&self) -> Vec2i {
