@@ -459,7 +459,10 @@ fn reset_game(state: &mut GameState) {
     state.health.lives = 3;
     state.contacts.clear();
     state.spawn_timer = 0;
-
+    state.scroll_speed = 3;
+    for map in state.obstacle_maps.iter_mut(){
+        map.new_map(vec![6;40]);
+    }
     // for ob in state.obstacles.iter_mut() {
     //     ob.drawable = false;
 
