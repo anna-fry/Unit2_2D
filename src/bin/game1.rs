@@ -140,6 +140,7 @@ fn main() {
             },
             Vec2i(160, 20),
             true,
+            Effect::Nothing
         ),
         spawn_timer: 0,
         scroll_speed: 3,
@@ -411,36 +412,36 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
             gather_contacts(&state.map, &state.player, &[], &mut state.contacts);
 
             // Detect collisions: See if the player is collided with an obstacle
-    state.contacts.clear();
-    gather_contacts(&state.map, &state.player, &[], &mut state.contacts);
-    for vec in state.obstacle_maps.iter(){
-        gather_contacts(&vec, &state.player, &[], &mut state.contacts);
-    }
-    // TODO: Handle collisions: Take damage, speed up, or slow down
-    state.immunities[0] -= 1;
-    state.immunities[1] -=1;
-    match restitute(&state.map, &mut state.player, &[], &mut state.contacts){
-    //match collision_effect(&state.player, &mut state.obstacles){
-        Effect::Hurt(n) => 
-        {   if state.immunities[0]<=0{
-                if state.health.lives >n{
-                    state.immunities[0] =48;
-                    state.health.lives -=n;
-                    state.scroll_speed =1;}
-                else{
-                   state.mode = GameMode::GameOver;
+            state.contacts.clear();
+            gather_contacts(&state.map, &state.player, &[], &mut state.contacts);
+            for vec in state.obstacle_maps.iter(){
+                gather_contacts(&vec, &state.player, &[], &mut state.contacts);
             }
-        }
-    },
-        Effect::Speedup(n) => {
-            if state.immunities[1] <=0{
-                state.scroll_speed +=n;
-                state.immunities[1] = 48;
+            // TODO: Handle collisions: Take damage, speed up, or slow down
+            state.immunities[0] -= 1;
+            state.immunities[1] -=1;
+            match restitute(&state.map, &mut state.player, &[], &mut state.contacts) {
+            //match collision_effect(&state.player, &mut state.obstacles){
+                Effect::Hurt(n) => 
+                {   if state.immunities[0]<=0{
+                        if state.health.lives >n{
+                            state.immunities[0] =48;
+                            state.health.lives -=n;
+                            state.scroll_speed =1;}
+                        else{
+                            state.mode = GameMode::GameOver;
+                        }
+                    }
+                },
+                Effect::Speedup(n) => {
+                    if state.immunities[1] <=0{
+                        state.scroll_speed +=n;
+                        state.immunities[1] = 48;
+                    }
+                },
+                _ => {}
             }
-            },
-        _ => {}
-          }
-      },
+        },
         GameMode::GameOver => {
             if input.key_held(VirtualKeyCode::Return) {
                 state.mode = GameMode::Playing;

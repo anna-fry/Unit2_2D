@@ -22,7 +22,7 @@ use Unit2_2D::{
     text::*,
 };
 
-type Level = (Tilemap, Vec<Sprite>);
+type Level = (Vec<Tilemap>, Vec<Sprite>);
 
 enum GameMode {
     Title,
@@ -78,15 +78,14 @@ fn main() {
     let enemy_tex = Rc::new(Texture::with_file(Path::new("content/dinor.png")));
     let level_tex = Rc::new(Texture::with_file(Path::new("content/dungeon.png")));
     let health_tex = Rc::new(Texture::with_file(Path::new("content/Heart.png")));
-    let inside_tex = Rc::new(Texture::with_file(Path::new("content/inside.png")));
     let tileset = Rc::new(Tileset::new(
         {
             (0..64)
             .map(|i| (
                 if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18  {
-                    Tile { solid: true }
+                    Tile { solid: true, collide:Effect::Nothing }
                 } else {
-                    Tile { solid: false }
+                    Tile { solid: false, collide:Effect::Nothing }
                 }
             ))
             .collect()
@@ -95,7 +94,7 @@ fn main() {
     ));
 
     let levels: Vec<Level> = vec![
-        (Tilemap::new(
+        (vec![Tilemap::new(
             Vec2i(0, 0),
             (10, 9),
             &tileset,
@@ -110,17 +109,16 @@ fn main() {
                 16, 17, 17, 17, 40, 17, 17, 17, 17, 18,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ],
-        ), vec![Sprite::new(
-            &level_tex,
-            Rect {
-                x: 160,
-                y: 0,
-                w: 32,
-                h: 64,
-            },
-            Vec2i(160, 0),
-            true,
-            ),
+        ),
+        Tilemap::new(
+            Vec2i(0, 0),
+            (10, 2),
+            &tileset,
+            vec![
+                30, 30, 30, 30, 30, 5, 30, 30, 30, 30,
+                30, 30, 30, 30, 30, 13, 30, 30, 30, 30,
+            ],
+        )], vec![
             Sprite::new(
             &enemy_tex,
             Rect {
@@ -131,8 +129,9 @@ fn main() {
             },
             Vec2i(164, 32),
             true,
+            Effect::Fight,
         )] ),
-        (Tilemap::new(
+        (vec![Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
             &tileset,
@@ -151,17 +150,16 @@ fn main() {
                 30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
                 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
             ],
-        ), vec![Sprite::new(
-            &level_tex,
-            Rect {
-                x: 160,
-                y: 0,
-                w: 32,
-                h: 64,
-            },
-            Vec2i(160, 0),
-            true,
-            ),
+        ),
+        Tilemap::new(
+            Vec2i(0, 0),
+            (10, 2),
+            &tileset,
+            vec![
+                30, 30, 30, 30, 30, 5, 30, 30, 30, 30,
+                30, 30, 30, 30, 30, 13, 30, 30, 30, 30,
+            ],
+        )], vec![
             Sprite::new(
             &enemy_tex,
             Rect {
@@ -172,8 +170,9 @@ fn main() {
             },
             Vec2i(164, 32),
             true,
+            Effect::Fight
         )] ),
-        (Tilemap::new(
+        (vec![Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
             &tileset,
@@ -192,17 +191,16 @@ fn main() {
                 30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
                 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
             ],
-        ), vec![Sprite::new(
-            &level_tex,
-            Rect {
-                x: 160,
-                y: 0,
-                w: 32,
-                h: 64,
-            },
-            Vec2i(160, 0),
-            true,
-            ),
+        ),
+        Tilemap::new(
+            Vec2i(0, 0),
+            (10, 2),
+            &tileset,
+            vec![
+                30, 30, 30, 30, 30, 5, 30, 30, 30, 30,
+                30, 30, 30, 30, 30, 13, 30, 30, 30, 30,
+            ],
+        )], vec![
             Sprite::new(
             &enemy_tex,
             Rect {
@@ -213,8 +211,9 @@ fn main() {
             },
             Vec2i(164, 32),
             true,
+            Effect::Fight,
         )] ),
-        (Tilemap::new(
+        (vec![Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
             &tileset,
@@ -233,7 +232,7 @@ fn main() {
                 30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
                 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
             ],
-        ), vec![Sprite::new(
+        )], vec![Sprite::new(
             &level_tex,
             Rect {
                 x: 160,
@@ -243,6 +242,7 @@ fn main() {
             },
             Vec2i(128, 128),
             true,
+            Effect::Win,
             ),
         ] ),
     ];
@@ -259,6 +259,7 @@ fn main() {
             },
             Vec2i(136, 224),
             true,
+            Effect::Nothing
         ),
         health: HealthStatus{
             image: Rc::clone(&health_tex),
@@ -380,9 +381,13 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             );
         }
         GameMode::Map => {
-            levels[state.level].0.draw(screen);
-            for s in levels[state.level].1.iter() {
-                screen.draw_sprite(&s);
+            for m in levels[state.level].0.iter() {
+                m.draw(screen);
+            }
+            if !state.passed {
+                for (si, s) in levels[state.level].1.iter().enumerate() {
+                    screen.draw_sprite(&s);
+                }
             }
             screen.draw_sprite(&state.player);
         }
@@ -426,23 +431,36 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
 
             // Detect collisions: See if the player is collided with an obstacle
             state.contacts.clear();
-            gather_contacts(&levels[state.level].0, &state.player, &levels[state.level].1, &mut state.contacts);
+            let mut statics = &vec![];
+            if !state.passed {
+                statics = &levels[state.level].1;
+            }
+            gather_contacts(&levels[state.level].0[0], &state.player, statics, &mut state.contacts);
 
-            restitute(&levels[state.level].0, &mut state.player, &levels[state.level].1, &mut state.contacts);
+            match restitute(&levels[state.level].0[0], &mut state.player, statics, &mut state.contacts) {
+                Effect::Fight => {
+                    state.mode = GameMode::Fight;
+                },
+                Effect::Win => { 
+                    state.mode = GameMode::GameOver;
+                },
+                _ => {}
+            }
 
             if state.player.position.0 < 192 && state.player.position.0 > 160 && state.player.position.1 < 8 {
                 state.level += 1;
                 state.player.position = Vec2i(128, 352);
-                state.window = Vec2i(0, 128)
+                state.window = Vec2i(0, 128);
+                state.passed = false;
             }
 
-            if state.player.position.1 > (state.window.1 + HEIGHT as i32 - 17)  {
+            if state.player.position.1 > (state.window.1 + HEIGHT as i32 - 32)  {
                 state.window.1 += 2;
                 if state.window.1 > HEIGHT as i32*2 {
                     state.window.1 = HEIGHT as i32*2;
                 }
             }
-            if state.player.position.1 < (state.window.1 + 16) {
+            if state.player.position.1 < (state.window.1 + 32) {
                 state.window.1 -= 2;
                 if state.window.1 < 0 {
                     state.window.1 = 0;
@@ -450,7 +468,10 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             }
         }
         GameMode::Fight => {
-            // TODO: Read in attack choices and do state logic
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Map;
+                state.passed = true;
+            }
         }
         GameMode::GameOver => {
             // TODO: Reset Game

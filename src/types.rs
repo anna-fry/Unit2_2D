@@ -38,5 +38,7 @@ pub struct Rgba(pub u8, pub u8, pub u8, pub u8);
 pub enum Effect{
     Speedup(usize),
     Hurt(usize),
+    Fight,
+    Win,
     Nothing
 }

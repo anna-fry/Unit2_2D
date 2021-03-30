@@ -10,17 +10,17 @@ pub struct Sprite {
     // Or use =animation:Animation= instead of a frame field
     pub position: Vec2i,
     pub drawable: bool,
-    pub collision: Effect
+    pub collision: Effect,
 }
 
 impl Sprite {
-    pub fn new(image: &Rc<Texture>, frame: Rect, position: Vec2i, drawable: bool) -> Self {
+    pub fn new(image: &Rc<Texture>, frame: Rect, position: Vec2i, drawable: bool, collision: Effect) -> Self {
         Self {
             image: Rc::clone(image),
             frame,
             position,
             drawable,
-            collision:Effect::Nothing
+            collision,
         }
     }
     pub fn get_dimensions(&self) -> Vec2i {

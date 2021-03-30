@@ -8,7 +8,7 @@ use crate::{sprite::{Sprite}};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 enum ColliderID {
-    Static((usize, Vec2i)),
+    Static((usize, Vec2i, bool)),
     Dynamic(usize),
 }
 
@@ -28,9 +28,9 @@ pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, statics: &[Sprite], i
                                                         Rect{ x:b.position.0, y: b.position.1, w: b.frame.w, h: b.frame.h }) {
             into.push(Contact {
                 a: ColliderID::Dynamic(0),
-                b: ColliderID::Static((bi, b.position)),
+                b: ColliderID::Static((bi, b.position, true)),
                 mtv: Some(disp),
-                effect:Effect::Nothing
+                effect: b.collision,
             });
         }
     }
@@ -78,7 +78,7 @@ pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, statics: &[Sprite], i
                 if let Some(m) = mtv {
                     into.push(Contact {
                         a: ColliderID::Dynamic(0),
-                        b: ColliderID::Static((0, Vec2i(x, y))),
+                        b: ColliderID::Static((0, Vec2i(x, y), false)),
                         mtv: Some(m),
                         effect: tile.collide 
                     });
@@ -87,7 +87,7 @@ pub fn gather_contacts(tilemap: &Tilemap, sprite: &Sprite, statics: &[Sprite], i
             else{
                 into.push(Contact {
                     a: ColliderID::Dynamic(0),
-                    b: ColliderID::Static((0, Vec2i(x, y))),
+                    b: ColliderID::Static((0, Vec2i(x, y), false)),
                     mtv: None,
                     effect: tile.collide 
                 });
@@ -112,6 +112,8 @@ pub fn restitute(
             Effect::Hurt(n) => {effect = Effect::Hurt(n)},
             Effect::Speedup(n) => 
                 {if effect == Effect::Nothing {effect = Effect::Speedup(n)}},
+            Effect::Fight => {effect = Effect::Fight},
+            Effect::Win => {effect = Effect::Win},
             _ =>{}
         }
         if let Some(mtv) = contact.mtv{
@@ -124,12 +126,19 @@ pub fn restitute(
                     w: sprite.get_dimensions().0 as u16,
                     h: sprite.get_dimensions().1 as u16,
                 };
-                let rect = Rect {
-                    x: tile.1 .0 * TILE_SZ as i32 + tilemap.position.0,
-                    y: tile.1 .1 * TILE_SZ as i32 + tilemap.position.1,
-                    w: TILE_SZ as u16,
-                    h: TILE_SZ as u16,
-                };
+                let rect = if si.2 {
+                    Rect { 
+                        x: si.1.0, 
+                        y: si.1.1, 
+                        w: statics[si.0].frame.w, 
+                        h: statics[si.0].frame.h } 
+                } else { 
+                    Rect {
+                        x: tile.1 .0 * TILE_SZ as i32 + tilemap.position.0,
+                        y: tile.1 .1 * TILE_SZ as i32 + tilemap.position.1,
+                        w: TILE_SZ as u16,
+                        h: TILE_SZ as u16,
+                }};
 
                 if Rect::rect_touching(a_rect, rect) {
                     if mtv.0 > mtv.1 && mtv.1 != 0 {
