@@ -530,12 +530,14 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             );
         }
         GameMode::GameOver => {
+            state.window = Vec2i(0,0);
+
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
             let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
 
-            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
-            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+            screen.rect(menu_rect, Rgba(53, 40, 33, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(250, 30, 10, 255));
 
             let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
             layout.reset(&LayoutSettings {
@@ -550,7 +552,7 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(255, 255, 255, 255),
+                Rgba(250, 30, 10, 255),
             );
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
@@ -564,16 +566,17 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(255, 255, 255, 255),
+                Rgba(250, 30, 10, 255),
             );
         },
         GameMode::Win => {
+            state.window = Vec2i(0,0);
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
             let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
 
-            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
-            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+            screen.rect(menu_rect, Rgba(53, 40, 33, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(250, 30, 10, 255));
 
             let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
             layout.reset(&LayoutSettings {
@@ -588,7 +591,7 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(255, 255, 255, 255),
+                Rgba(250, 30, 10, 255),
             );
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
@@ -602,7 +605,7 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(255, 255, 255, 255),
+                Rgba(250, 30, 10, 255),
             );
         }
     }
@@ -685,7 +688,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 state.mode = GameMode::Map;
                 state.passed = true;
             }
-            if input.key_pressed(VirtualKeyCode::A) {
+            if input.key_released(VirtualKeyCode::A) {
                 state.player_choice = Attack::Aggressive;
                 match enemy_choice {
                     Attack::Aggressive => {},
@@ -707,7 +710,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 state.mode = GameMode::Fight;
                 state.choice_frame = frame;
             }
-            if input.key_pressed(VirtualKeyCode::S) {
+            if input.key_released(VirtualKeyCode::S) {
                 state.player_choice = Attack::Sneaky;
                 match enemy_choice {
                     Attack::Aggressive => {
@@ -733,7 +736,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 state.mode = GameMode::Fight;
                 state.choice_frame = frame;
             }
-            if input.key_pressed(VirtualKeyCode::D) {
+            if input.key_released(VirtualKeyCode::D) {
                 state.player_choice = Attack::Defensive;
                 match enemy_choice {
                     Attack::Aggressive => {
@@ -762,6 +765,8 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
         GameMode::Fight => {
             if frame - state.choice_frame > 120 {
                 if state.enemy_health.lives == 0 {
+                    state.enemy_health.lives = levels[state.level].2;
+                    state.health.lives = 5;
                     state.mode = GameMode::Map;
                     state.passed = true;
                 } else if state.health.lives == 0 {
@@ -772,9 +777,17 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             }
         }
         GameMode::GameOver => {
-            // TODO: Reset Game
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Map;
+                reset_game(state, levels);
+            }
         }
-        _ => {}
+        GameMode::Win => {
+            if input.key_held(VirtualKeyCode::Return) {
+                state.mode = GameMode::Map;
+                reset_game(state, levels);
+            }
+        }
     }
 }
 
@@ -788,4 +801,17 @@ fn get_enemy_decision(player_health: usize, enemy_health: usize, enemy_cap: usiz
     } else {
         Attack::Sneaky
     }
+}
+
+fn reset_game(state: &mut GameState, levels: &[Level]) {
+    state.player.position = Vec2i(136, 224);
+    state.health.lives = 5;
+    state.enemy_health.lives = levels[0].2;
+    state.player_choice = Attack::Nothing;
+    state.enemy_choice = Attack::Nothing;
+    state.choice_frame = 0;
+    state.contacts.clear();
+    state.window = Vec2i(0,0);
+    state.level = 0;
+    state.passed = false;
 }
