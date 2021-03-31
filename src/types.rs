@@ -40,5 +40,13 @@ pub enum Effect{
     Hurt(usize),
     Fight,
     Win,
-    Nothing
+    Nothing,
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
+pub enum Attack{
+    Aggressive,
+    Defensive,
+    Sneaky,
+    Nothing,
 }

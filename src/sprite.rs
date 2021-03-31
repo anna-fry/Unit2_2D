@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct Sprite {
-    image: Rc<Texture>,
+    pub image: Rc<Texture>,
     pub frame: Rect, // Maybe better to use a type that can't have a negative origin
     // Or use =animation:Animation= instead of a frame field
     pub position: Vec2i,

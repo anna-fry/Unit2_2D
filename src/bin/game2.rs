@@ -2,6 +2,7 @@ use fontdue::{
     layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle},
     Font,
 };
+use image::imageops::vertical_gradient;
 use pixels::{Pixels, SurfaceTexture};
 use rand::Rng;
 use std::{fs::read, path::Path, rc::Rc, time::Instant};
@@ -22,13 +23,15 @@ use Unit2_2D::{
     text::*,
 };
 
-type Level = (Vec<Tilemap>, Vec<Sprite>);
+type Level = (Vec<Tilemap>, Vec<Sprite>, usize);
 
 enum GameMode {
     Title,
     Map,
     Fight,
+    FightChoice,
     GameOver,
+    Win,
 }
 
 struct GameState {
@@ -37,6 +40,10 @@ struct GameState {
     // TODO: Add in a way to keep track of the enemies for each level
     // Change this maybe? Hearts vs health bar
     health: HealthStatus,
+    enemy_health: HealthStatus,
+    player_choice: Attack,
+    enemy_choice: Attack,
+    choice_frame: usize,
     contacts: Vec<Contact>,
     window: Vec2i,
     level: usize,
@@ -130,7 +137,7 @@ fn main() {
             Vec2i(164, 32),
             true,
             Effect::Fight,
-        )] ),
+        )], 3),
         (vec![Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
@@ -171,7 +178,7 @@ fn main() {
             Vec2i(164, 32),
             true,
             Effect::Fight
-        )] ),
+        )], 4),
         (vec![Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
@@ -212,7 +219,7 @@ fn main() {
             Vec2i(164, 32),
             true,
             Effect::Fight,
-        )] ),
+        )], 5),
         (vec![Tilemap::new(
             Vec2i(0, 0),
             (10, 13),
@@ -244,7 +251,7 @@ fn main() {
             true,
             Effect::Win,
             ),
-        ] ),
+        ], 0),
     ];
 
     let mut state = GameState {
@@ -263,16 +270,31 @@ fn main() {
         ),
         health: HealthStatus{
             image: Rc::clone(&health_tex),
-            lives: 3,
+            lives: 5,
             frame: Rect {
                 x:0,
                 y:0,
                 w:16,
                 h:16
             },
-            start: Vec2i(120, 15),
+            start: Vec2i(32, 56),
             spacing: 18
         },
+        enemy_health: HealthStatus{
+            image: Rc::clone(&health_tex),
+            lives: levels[0].2,
+            frame: Rect {
+                x:0,
+                y:0,
+                w:16,
+                h:16
+            },
+            start: Vec2i(240, 56),
+            spacing: 18
+        },
+        player_choice: Attack::Nothing,
+        enemy_choice: Attack::Nothing,
+        choice_frame: 0,
         contacts: vec![],
         window: Vec2i(0,0), 
         level: 0,
@@ -392,11 +414,197 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             screen.draw_sprite(&state.player);
         }
         GameMode::Fight => {
-            // TODO: Render the fight screen
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            screen.draw_health(&state.health);
+            screen.draw_health(&state.enemy_health);
+            screen.bitblt(&state.player.image, state.player.frame, Vec2i(32, 32));
+            screen.bitblt(&levels[state.level].1[0].image, levels[state.level].1[0].frame, Vec2i(264, 32));
+            screen.rect(Rect { x: 32, y: 85, w: WIDTH as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
+            screen.rect(Rect { x: 182, y: 85, w: WIDTH as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: 32 as f32,
+                y: 85 as f32,
+                max_height: Some((h/6) as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            match state.player_choice {
+                Attack::Aggressive => { layout.append(&state.fonts.font_list, &TextStyle::new("aggressive", 20.0, 0)); }
+                Attack::Defensive => { layout.append(&state.fonts.font_list, &TextStyle::new("defensive", 20.0, 0)); }
+                Attack::Sneaky => { layout.append(&state.fonts.font_list, &TextStyle::new("sneaky", 20.0, 0)); }
+                _ => {}
+            }
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(250, 30, 10, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: 182 as f32,
+                y: 85 as f32,
+                max_height: Some((h/6) as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            match state.enemy_choice {
+                Attack::Aggressive => { layout.append(&state.fonts.font_list, &TextStyle::new("aggressive", 20.0, 0)); }
+                Attack::Defensive => { layout.append(&state.fonts.font_list, &TextStyle::new("defensive", 20.0, 0)); }
+                Attack::Sneaky => { layout.append(&state.fonts.font_list, &TextStyle::new("sneaky", 20.0, 0)); }
+                _ => {}
+            }
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(250, 30, 10, 255),
+            );
+        },
+        GameMode::FightChoice => {
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            screen.draw_health(&state.health);
+            screen.draw_health(&state.enemy_health);
+            screen.bitblt(&state.player.image, state.player.frame, Vec2i(32, 32));
+            screen.bitblt(&levels[state.level].1[0].image, levels[state.level].1[0].frame, Vec2i(264, 32));
+            screen.rect(Rect { x: 32, y: 85, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
+            screen.rect(Rect { x: 32, y: 135, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
+            screen.rect(Rect { x: 32, y: 185, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
+            screen.rect(Rect { x: 182, y: 85, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(0, 0, 0, 255));
+            screen.rect(Rect { x: 182, y: 135, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(0, 0, 0, 255));
+            screen.rect(Rect { x: 182, y: 185, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(0, 0, 0, 255));
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: 32 as f32,
+                y: 85 as f32,
+                max_height: Some((h/6) as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("[a]ggressive", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(250, 30, 10, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: 32 as f32,
+                y: 135 as f32,
+                max_height: Some((h/6)  as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("[d]efensive", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(250, 30, 10, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: 32 as f32,
+                y: 185 as f32,
+                max_height: Some((h/6)  as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("[s]neaky", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(250, 30, 10, 255),
+            );
         }
         GameMode::GameOver => {
-            // TODO: Create game over screen
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+
+            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 6) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("GAME\nOVER", 45.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 2) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to play again", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
         },
+        GameMode::Win => {
+            let w = WIDTH as i32;
+            let h = HEIGHT as i32;
+            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+
+            screen.rect(menu_rect, Rgba(20, 0, 100, 255));
+            screen.empty_rect(menu_rect, 4, Rgba(200, 220, 255, 255));
+
+            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 6) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("YOU\nWIN", 45.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: (WIDTH / 6) as f32,
+                y: (HEIGHT / 2) as f32,
+                max_width: Some(((2*w)/3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to play again", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(255, 255, 255, 255),
+            );
+        }
     }
 
 }
@@ -439,7 +647,8 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
 
             match restitute(&levels[state.level].0[0], &mut state.player, statics, &mut state.contacts) {
                 Effect::Fight => {
-                    state.mode = GameMode::Fight;
+                    state.mode = GameMode::FightChoice;
+                    
                 },
                 Effect::Win => { 
                     state.mode = GameMode::GameOver;
@@ -467,14 +676,116 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 }
             }
         }
-        GameMode::Fight => {
+        GameMode::FightChoice => {
+            let enemy_choice = get_enemy_decision(state.health.lives, state.enemy_health.lives, levels[state.level].2);
+            let mut rng = rand::thread_rng();
+            state.enemy_choice = enemy_choice;
+
             if input.key_held(VirtualKeyCode::Return) {
                 state.mode = GameMode::Map;
                 state.passed = true;
+            }
+            if input.key_pressed(VirtualKeyCode::A) {
+                state.player_choice = Attack::Aggressive;
+                match enemy_choice {
+                    Attack::Aggressive => {},
+                    Attack::Defensive => {
+                        let decision = rng.gen_bool(0.5);
+                        if decision && state.enemy_health.lives < levels[state.level].2 {
+                            state.enemy_health.lives += 1;
+                        }
+                    },
+                    Attack::Sneaky => {
+                        if state.enemy_health.lives < 1 {
+                            state.enemy_health.lives = 0;
+                        } else {
+                            state.enemy_health.lives -= 1;
+                        }
+                    }
+                    _ => {}
+                }
+                state.mode = GameMode::Fight;
+                state.choice_frame = frame;
+            }
+            if input.key_pressed(VirtualKeyCode::S) {
+                state.player_choice = Attack::Sneaky;
+                match enemy_choice {
+                    Attack::Aggressive => {
+                        if state.health.lives < 1 {
+                            state.health.lives = 0;
+                        } else {
+                            state.health.lives -= 1;
+                        }
+                    },
+                    Attack::Defensive => {
+                        let decision = rng.gen_bool(0.25);
+                        if decision {
+                            if state.enemy_health.lives < 3 {
+                                state.enemy_health.lives = 0;
+                            } else {
+                                state.enemy_health.lives -= 3;
+                            }
+                        }
+                    },
+                    Attack::Sneaky => {},
+                    _ => {}
+                }
+                state.mode = GameMode::Fight;
+                state.choice_frame = frame;
+            }
+            if input.key_pressed(VirtualKeyCode::D) {
+                state.player_choice = Attack::Defensive;
+                match enemy_choice {
+                    Attack::Aggressive => {
+                        let decision = rng.gen_bool(0.5);
+                        if decision && state.health.lives < 5 {
+                            state.health.lives += 1;
+                        }
+                    },
+                    Attack::Defensive => {},
+                    Attack::Sneaky => {
+                        let decision = rng.gen_bool(0.25);
+                        if decision {
+                            if state.health.lives < 3 {
+                                state.health.lives = 0;
+                            } else {
+                                state.health.lives -= 3;
+                            }
+                        }
+                    },
+                    _ => {}
+                }
+                state.mode = GameMode::Fight;
+                state.choice_frame = frame;
+            }
+        }
+        GameMode::Fight => {
+            if frame - state.choice_frame > 120 {
+                if state.enemy_health.lives == 0 {
+                    state.mode = GameMode::Map;
+                    state.passed = true;
+                } else if state.health.lives == 0 {
+                    state.mode = GameMode::GameOver;
+                } else { 
+                    state.mode = GameMode::FightChoice;
+                }
             }
         }
         GameMode::GameOver => {
             // TODO: Reset Game
         }
+        _ => {}
+    }
+}
+
+fn get_enemy_decision(player_health: usize, enemy_health: usize, enemy_cap: usize) -> Attack {
+    let mut rng = rand::thread_rng();
+    let decision = rng.gen_range(0, 100);
+    if decision < 33 {
+        Attack::Defensive
+    } else if decision < 66 {
+        Attack::Aggressive
+    } else {
+        Attack::Sneaky
     }
 }
