@@ -1,7 +1,7 @@
 use crate::screen::Screen;
 use crate::texture::Texture;
-use crate::types::{Rect, Effect};
 use crate::types::Vec2i;
+use crate::types::{Effect, Rect};
 use std::rc::Rc;
 // Get tiles from sheet and move them with time steps
 
@@ -10,7 +10,7 @@ pub const TILE_SZ: usize = 32;
 #[derive(Clone, Copy)]
 pub struct Tile {
     pub solid: bool,
-    pub collide: Effect // ... any extra data like collision flags or other properties
+    pub collide: Effect, // ... any extra data like collision flags or other properties
 }
 /// A set of tiles used in multiple Tilemaps
 pub struct Tileset {
@@ -32,7 +32,6 @@ impl std::ops::Index<TileID> for Tileset {
         &self.tiles[id.0]
     }
 }
-
 
 impl Tileset {
     /// Create a new tileset
@@ -95,20 +94,36 @@ impl Tilemap {
         }
     }
 
-    pub fn next_room(&self, direction:usize, dims: (usize, usize), map:Vec<usize>) -> Self{
-        let position:Vec2i = match direction{
+    pub fn next_room(&self, direction: usize, dims: (usize, usize), map: Vec<usize>) -> Self {
+        let position: Vec2i = match direction {
             //up, right, down, left
-            0 => {Vec2i(self.position.0, self.position.1 - (self.dims.1 * TILE_SZ) as i32)}
-            1 => {Vec2i(self.position.0 + (self.dims.0 * TILE_SZ) as i32, self.position.1)} 
-            2 => {Vec2i(self.position.0, self.position.1 + (self.dims.1 * TILE_SZ) as i32)}
-            3 => {Vec2i(self.position.0 -(self.dims.0 * TILE_SZ) as i32, self.position.1)}
-            _ => {Vec2i(self.position.0, 100)}
+            0 => Vec2i(
+                self.position.0,
+                self.position.1 - (self.dims.1 * TILE_SZ) as i32,
+            ),
+            1 => Vec2i(
+                self.position.0 + (self.dims.0 * TILE_SZ) as i32,
+                self.position.1,
+            ),
+            2 => Vec2i(
+                self.position.0,
+                self.position.1 + (self.dims.1 * TILE_SZ) as i32,
+            ),
+            3 => Vec2i(
+                self.position.0 - (self.dims.0 * TILE_SZ) as i32,
+                self.position.1,
+            ),
+            _ => Vec2i(self.position.0, 100),
         };
         print!("{} ", position.1);
         Tilemap::new(position, dims, &self.tileset.clone(), map)
     }
-    pub fn new_map(&mut self,map:Vec<usize>){
-        assert_eq!(self.dims.0 * self.dims.1, map.len(), "Tilemap is the wrong size!");
+    pub fn new_map(&mut self, map: Vec<usize>) {
+        assert_eq!(
+            self.dims.0 * self.dims.1,
+            map.len(),
+            "Tilemap is the wrong size!"
+        );
         assert!(
             map.iter().all(|tid| self.tileset.contains(TileID(*tid))),
             "Tilemap refers to nonexistent tiles"
@@ -154,18 +169,18 @@ impl Tilemap {
         // leftmost tile: get camera.x into our frame of reference, then divide down to tile units
         // Note that it's also forced inside of 0..self.size.0
 
-        let left = ((sx-self.position.0) / TILE_SZ as i32)
+        let left = ((sx - self.position.0) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.0 as i32) as usize;
         // rightmost tile: same deal, but with screen.x + screen.w.
-        let right = ((sx+((sw+TILE_SZ as u16) as i32)-self.position.0) / TILE_SZ as i32)
+        let right = ((sx + ((sw + TILE_SZ as u16) as i32) - self.position.0) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.0 as i32) as usize;
         // ditto top and bot
-        let top = ((sy-self.position.1) / TILE_SZ as i32)
+        let top = ((sy - self.position.1) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.1 as i32) as usize;
-        let bot = ((sy+((sh+TILE_SZ as u16) as i32)-self.position.1) / TILE_SZ as i32)
+        let bot = ((sy + ((sh + TILE_SZ as u16) as i32) - self.position.1) / TILE_SZ as i32)
             .max(0)
             .min(self.dims.1 as i32) as usize;
 
@@ -180,7 +195,7 @@ impl Tilemap {
             for (x, id) in (left..right).zip(row[left..right].iter()) {
                 let xpx = (x * TILE_SZ) as i32 + self.position.0;
                 let frame = self.tileset.get_rect(*id);
-                screen.bitblt(&self.tileset.texture, frame, Vec2i(xpx, ypx));
+                screen.bitblt(&self.tileset.texture, frame, Vec2i(xpx, ypx), false);
             }
         }
     }

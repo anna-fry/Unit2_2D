@@ -24,6 +24,7 @@ impl<'fb> DrawHealthExt for Screen<'fb> {
                 &h.image,
                 h.frame,
                 Vec2i(h.start.0 + (n as i32 * h.spacing), h.start.1),
+                false,
             );
         }
     }

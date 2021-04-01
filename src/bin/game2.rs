@@ -13,14 +13,8 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use Unit2_2D::{
-    collision::*,
-    health::*,
-    screen::Screen,
-    sprite::*,
-    texture::Texture,
-    tiles::*,
+    collision::*, health::*, screen::Screen, sprite::*, text::*, texture::Texture, tiles::*,
     types::*,
-    text::*,
 };
 
 type Level = (Vec<Tilemap>, Vec<Sprite>, usize);
@@ -88,170 +82,172 @@ fn main() {
     let tileset = Rc::new(Tileset::new(
         {
             (0..64)
-            .map(|i| (
-                if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18  {
-                    Tile { solid: true, collide:Effect::Nothing }
-                } else {
-                    Tile { solid: false, collide:Effect::Nothing }
-                }
-            ))
-            .collect()
+                .map(|i| {
+                    (if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18 {
+                        Tile {
+                            solid: true,
+                            collide: Effect::Nothing,
+                        }
+                    } else {
+                        Tile {
+                            solid: false,
+                            collide: Effect::Nothing,
+                        }
+                    })
+                })
+                .collect()
         },
         &level_tex,
     ));
 
     let levels: Vec<Level> = vec![
-        (vec![Tilemap::new(
-            Vec2i(0, 0),
-            (10, 9),
-            &tileset,
+        (
             vec![
-                0, 1, 1, 1, 1, 19, 1, 1, 1, 2,
-                0, 32, 33, 33, 33, 41, 33, 33, 34, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                16, 17, 17, 17, 40, 17, 17, 17, 17, 18,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                Tilemap::new(
+                    Vec2i(0, 0),
+                    (10, 9),
+                    &tileset,
+                    vec![
+                        0, 1, 1, 1, 1, 19, 1, 1, 1, 2, 0, 32, 33, 33, 33, 41, 33, 33, 34, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 0, 40, 41, 41, 41, 41, 41, 41, 42, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 0, 40, 41, 41, 41, 41, 41, 41, 42, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 16, 17, 17, 17, 40, 17, 17, 17, 17, 18, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    ],
+                ),
+                Tilemap::new(
+                    Vec2i(0, 0),
+                    (10, 2),
+                    &tileset,
+                    vec![
+                        30, 30, 30, 30, 30, 5, 30, 30, 30, 30, 30, 30, 30, 30, 30, 13, 30, 30, 30,
+                        30,
+                    ],
+                ),
             ],
+            vec![Sprite::new(
+                &enemy_tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 24,
+                    h: 24,
+                },
+                Vec2i(164, 32),
+                true,
+                Effect::Fight,
+            )],
+            3,
         ),
-        Tilemap::new(
-            Vec2i(0, 0),
-            (10, 2),
-            &tileset,
+        (
             vec![
-                30, 30, 30, 30, 30, 5, 30, 30, 30, 30,
-                30, 30, 30, 30, 30, 13, 30, 30, 30, 30,
+                Tilemap::new(
+                    Vec2i(0, 0),
+                    (10, 13),
+                    &tileset,
+                    vec![
+                        0, 1, 1, 1, 1, 19, 1, 1, 1, 2, 0, 32, 33, 33, 33, 41, 33, 33, 34, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 0, 40, 41, 41, 41, 41, 41, 41, 42, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 0, 40, 41, 41, 41, 41, 41, 41, 42, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 16, 17, 17, 17, 40, 17, 17, 17, 17, 18, 30,
+                        30, 30, 0, 40, 2, 30, 30, 30, 30, 30, 30, 30, 0, 40, 2, 30, 30, 30, 30, 30,
+                        30, 30, 0, 40, 2, 30, 30, 30, 30, 30, 30, 30, 0, 40, 2, 30, 30, 30, 30, 30,
+                        30, 30, 30, 30, 30, 30, 30, 30, 30,
+                    ],
+                ),
+                Tilemap::new(
+                    Vec2i(0, 0),
+                    (10, 2),
+                    &tileset,
+                    vec![
+                        30, 30, 30, 30, 30, 5, 30, 30, 30, 30, 30, 30, 30, 30, 30, 13, 30, 30, 30,
+                        30,
+                    ],
+                ),
             ],
-        )], vec![
-            Sprite::new(
-            &enemy_tex,
-            Rect {
-                x: 0,
-                y: 0,
-                w: 24,
-                h: 24,
-            },
-            Vec2i(164, 32),
-            true,
-            Effect::Fight,
-        )], 3),
-        (vec![Tilemap::new(
-            Vec2i(0, 0),
-            (10, 13),
-            &tileset,
-            vec![
-                0, 1, 1, 1, 1, 19, 1, 1, 1, 2,
-                0, 32, 33, 33, 33, 41, 33, 33, 34, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                16, 17, 17, 17, 40, 17, 17, 17, 17, 18,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-            ],
+            vec![Sprite::new(
+                &enemy_tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 24,
+                    h: 24,
+                },
+                Vec2i(164, 32),
+                true,
+                Effect::Fight,
+            )],
+            4,
         ),
-        Tilemap::new(
-            Vec2i(0, 0),
-            (10, 2),
-            &tileset,
+        (
             vec![
-                30, 30, 30, 30, 30, 5, 30, 30, 30, 30,
-                30, 30, 30, 30, 30, 13, 30, 30, 30, 30,
+                Tilemap::new(
+                    Vec2i(0, 0),
+                    (10, 13),
+                    &tileset,
+                    vec![
+                        0, 1, 1, 1, 1, 19, 1, 1, 1, 2, 0, 32, 33, 33, 33, 41, 33, 33, 34, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 0, 40, 41, 41, 41, 41, 41, 41, 42, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 0, 40, 41, 41, 41, 41, 41, 41, 42, 2, 0, 40,
+                        41, 41, 41, 41, 41, 41, 42, 2, 16, 17, 17, 17, 40, 17, 17, 17, 17, 18, 30,
+                        30, 30, 0, 40, 2, 30, 30, 30, 30, 30, 30, 30, 0, 40, 2, 30, 30, 30, 30, 30,
+                        30, 30, 0, 40, 2, 30, 30, 30, 30, 30, 30, 30, 0, 40, 2, 30, 30, 30, 30, 30,
+                        30, 30, 30, 30, 30, 30, 30, 30, 30,
+                    ],
+                ),
+                Tilemap::new(
+                    Vec2i(0, 0),
+                    (10, 2),
+                    &tileset,
+                    vec![
+                        30, 30, 30, 30, 30, 5, 30, 30, 30, 30, 30, 30, 30, 30, 30, 13, 30, 30, 30,
+                        30,
+                    ],
+                ),
             ],
-        )], vec![
-            Sprite::new(
-            &enemy_tex,
-            Rect {
-                x: 0,
-                y: 0,
-                w: 24,
-                h: 24,
-            },
-            Vec2i(164, 32),
-            true,
-            Effect::Fight
-        )], 4),
-        (vec![Tilemap::new(
-            Vec2i(0, 0),
-            (10, 13),
-            &tileset,
-            vec![
-                0, 1, 1, 1, 1, 19, 1, 1, 1, 2,
-                0, 32, 33, 33, 33, 41, 33, 33, 34, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                0, 40, 41, 41, 41, 41, 41, 41, 42, 2,
-                16, 17, 17, 17, 40, 17, 17, 17, 17, 18,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-            ],
+            vec![Sprite::new(
+                &enemy_tex,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    w: 24,
+                    h: 24,
+                },
+                Vec2i(164, 32),
+                true,
+                Effect::Fight,
+            )],
+            5,
         ),
-        Tilemap::new(
-            Vec2i(0, 0),
-            (10, 2),
-            &tileset,
-            vec![
-                30, 30, 30, 30, 30, 5, 30, 30, 30, 30,
-                30, 30, 30, 30, 30, 13, 30, 30, 30, 30,
-            ],
-        )], vec![
-            Sprite::new(
-            &enemy_tex,
-            Rect {
-                x: 0,
-                y: 0,
-                w: 24,
-                h: 24,
-            },
-            Vec2i(164, 32),
-            true,
-            Effect::Fight,
-        )], 5),
-        (vec![Tilemap::new(
-            Vec2i(0, 0),
-            (10, 13),
-            &tileset,
-            vec![
-                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-                30, 30, 0, 1, 1, 1, 2, 30, 30, 30,
-                30, 30, 0, 32, 33, 33, 2, 30, 30, 30,
-                30, 30, 0, 40, 41, 41, 2, 30, 30, 30,
-                30, 30, 0, 40, 41, 41, 2, 30, 30, 30,
-                30, 30, 0, 40, 41, 41, 2, 30, 30, 30,
-                30, 30, 16, 17, 40, 17, 18, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 0, 40, 2, 30, 30, 30, 30,
-                30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-            ],
-        )], vec![Sprite::new(
-            &level_tex,
-            Rect {
-                x: 160,
-                y: 64,
-                w: 32,
-                h: 32,
-            },
-            Vec2i(128, 128),
-            true,
-            Effect::Win,
-            ),
-        ], 0),
+        (
+            vec![Tilemap::new(
+                Vec2i(0, 0),
+                (10, 13),
+                &tileset,
+                vec![
+                    30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+                    30, 30, 0, 1, 1, 1, 2, 30, 30, 30, 30, 30, 0, 32, 33, 33, 2, 30, 30, 30, 30,
+                    30, 0, 40, 41, 41, 2, 30, 30, 30, 30, 30, 0, 40, 41, 41, 2, 30, 30, 30, 30, 30,
+                    0, 40, 41, 41, 2, 30, 30, 30, 30, 30, 16, 17, 40, 17, 18, 30, 30, 30, 30, 30,
+                    30, 0, 40, 2, 30, 30, 30, 30, 30, 30, 30, 0, 40, 2, 30, 30, 30, 30, 30, 30, 30,
+                    0, 40, 2, 30, 30, 30, 30, 30, 30, 30, 0, 40, 2, 30, 30, 30, 30, 30, 30, 30, 30,
+                    30, 30, 30, 30, 30, 30,
+                ],
+            )],
+            vec![Sprite::new(
+                &level_tex,
+                Rect {
+                    x: 160,
+                    y: 64,
+                    w: 32,
+                    h: 32,
+                },
+                Vec2i(128, 128),
+                true,
+                Effect::Win,
+            )],
+            0,
+        ),
     ];
 
     let mut state = GameState {
@@ -266,37 +262,37 @@ fn main() {
             },
             Vec2i(136, 224),
             true,
-            Effect::Nothing
+            Effect::Nothing,
         ),
-        health: HealthStatus{
+        health: HealthStatus {
             image: Rc::clone(&health_tex),
             lives: 5,
             frame: Rect {
-                x:0,
-                y:0,
-                w:16,
-                h:16
+                x: 0,
+                y: 0,
+                w: 16,
+                h: 16,
             },
             start: Vec2i(32, 56),
-            spacing: 18
+            spacing: 18,
         },
-        enemy_health: HealthStatus{
+        enemy_health: HealthStatus {
             image: Rc::clone(&health_tex),
             lives: levels[0].2,
             frame: Rect {
-                x:0,
-                y:0,
-                w:16,
-                h:16
+                x: 0,
+                y: 0,
+                w: 16,
+                h: 16,
             },
             start: Vec2i(240, 56),
-            spacing: 18
+            spacing: 18,
         },
         player_choice: Attack::Nothing,
         enemy_choice: Attack::Nothing,
         choice_frame: 0,
         contacts: vec![],
-        window: Vec2i(0,0), 
+        window: Vec2i(0, 0),
         level: 0,
         passed: false,
         fonts: Fonts::new(fonts),
@@ -345,7 +341,7 @@ fn main() {
             available_time -= DT;
 
             update_game(&mut state, &input, frame_count, &levels);
-            
+
             // Increment the frame counter
             frame_count += 1;
         }
@@ -367,7 +363,12 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
 
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
-            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (2*h as u16)/3};
+            let menu_rect = Rect {
+                x: w / 6,
+                y: h / 8,
+                w: (2 * w as u16) / 3,
+                h: (2 * h as u16) / 3,
+            };
 
             screen.rect(menu_rect, Rgba(53, 40, 33, 255));
             screen.empty_rect(menu_rect, 4, Rgba(250, 30, 10, 255));
@@ -376,11 +377,14 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
                 y: (HEIGHT / 6) as f32,
-                max_width: Some(((2*w)/3) as f32),
+                max_width: Some(((2 * w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("DUNGEONS\nand\nDINOS", 45.0, 0));
+            layout.append(
+                &state.fonts.font_list,
+                &TextStyle::new("DUNGEONS\nand\nDINOS", 45.0, 0),
+            );
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
@@ -389,12 +393,15 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             );
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
-                y: (2*HEIGHT / 3) as f32,
-                max_width: Some(((2*w)/3) as f32),
+                y: (2 * HEIGHT / 3) as f32,
+                max_width: Some(((2 * w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to start", 20.0, 0));
+            layout.append(
+                &state.fonts.font_list,
+                &TextStyle::new("Press ENTER to start", 20.0, 0),
+            );
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
@@ -416,108 +423,459 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
         GameMode::Fight => {
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
+            screen.rect(
+                Rect {
+                    x: 5,
+                    y: 5,
+                    w: (WIDTH - 10) as u16,
+                    h: (HEIGHT - 10) as u16,
+                },
+                Rgba(230, 170, 90, 255),
+            );
+            screen.empty_rect(
+                Rect {
+                    x: 5,
+                    y: 5,
+                    w: (WIDTH - 10) as u16,
+                    h: (HEIGHT - 10) as u16,
+                },
+                5,
+                Rgba(110, 50, 20, 255),
+            );
             screen.draw_health(&state.health);
             screen.draw_health(&state.enemy_health);
-            screen.bitblt(&state.player.image, state.player.frame, Vec2i(32, 32));
-            screen.bitblt(&levels[state.level].1[0].image, levels[state.level].1[0].frame, Vec2i(264, 32));
-            screen.rect(Rect { x: 32, y: 85, w: WIDTH as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
-            screen.rect(Rect { x: 182, y: 85, w: WIDTH as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
+            screen.bitblt(
+                &state.player.image,
+                state.player.frame,
+                Vec2i(32, 32),
+                false,
+            );
+            screen.bitblt(
+                &levels[state.level].1[0].image,
+                levels[state.level].1[0].frame,
+                Vec2i(264, 32),
+                true,
+            );
             let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
-            layout.reset(&LayoutSettings {
-                x: 32 as f32,
-                y: 85 as f32,
-                max_height: Some((h/6) as f32),
-                vertical_align: fontdue::layout::VerticalAlign::Middle,
-                max_width: Some(((w)/3) as f32),
-                horizontal_align: fontdue::layout::HorizontalAlign::Center,
-                ..LayoutSettings::default()
-            });
             match state.player_choice {
-                Attack::Aggressive => { layout.append(&state.fonts.font_list, &TextStyle::new("aggressive", 20.0, 0)); }
-                Attack::Defensive => { layout.append(&state.fonts.font_list, &TextStyle::new("defensive", 20.0, 0)); }
-                Attack::Sneaky => { layout.append(&state.fonts.font_list, &TextStyle::new("sneaky", 20.0, 0)); }
+                Attack::Aggressive => {
+                    layout.reset(&LayoutSettings {
+                        x: 32.0,
+                        y: 85.0,
+                        max_height: Some((h / 6) as f32),
+                        vertical_align: fontdue::layout::VerticalAlign::Middle,
+                        max_width: Some(((w) / 3) as f32),
+                        horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                        ..LayoutSettings::default()
+                    });
+                    layout.append(
+                        &state.fonts.font_list,
+                        &TextStyle::new("aggressive", 20.0, 0),
+                    );
+                    screen.rect(
+                        Rect {
+                            x: 32,
+                            y: 85,
+                            w: w as u16 / 3 - 2,
+                            h: HEIGHT as u16 / 6,
+                        },
+                        Rgba(245, 240, 215, 255),
+                    );
+                    screen.empty_rect_no_corners(
+                        Rect {
+                            x: 30,
+                            y: 83,
+                            w: (w as u16 / 3) + 2,
+                            h: (HEIGHT as u16 / 6) + 2,
+                        },
+                        2,
+                        Rgba(110, 45, 15, 255),
+                    );
+                }
+                Attack::Defensive => {
+                    layout.reset(&LayoutSettings {
+                        x: 32.0,
+                        y: 135.0,
+                        max_height: Some((h / 6) as f32),
+                        vertical_align: fontdue::layout::VerticalAlign::Middle,
+                        max_width: Some(((w) / 3) as f32),
+                        horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                        ..LayoutSettings::default()
+                    });
+                    layout.append(
+                        &state.fonts.font_list,
+                        &TextStyle::new("defensive", 20.0, 0),
+                    );
+                    screen.rect(
+                        Rect {
+                            x: 32,
+                            y: 135,
+                            w: w as u16 / 3 - 2,
+                            h: HEIGHT as u16 / 6,
+                        },
+                        Rgba(245, 240, 215, 255),
+                    );
+                    screen.empty_rect_no_corners(
+                        Rect {
+                            x: 30,
+                            y: 133,
+                            w: (w as u16 / 3) + 2,
+                            h: (HEIGHT as u16 / 6) + 2,
+                        },
+                        2,
+                        Rgba(110, 45, 15, 255),
+                    );
+                }
+                Attack::Sneaky => {
+                    layout.reset(&LayoutSettings {
+                        x: 32.0,
+                        y: 185.0,
+                        max_height: Some((h / 6) as f32),
+                        vertical_align: fontdue::layout::VerticalAlign::Middle,
+                        max_width: Some(((w) / 3) as f32),
+                        horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                        ..LayoutSettings::default()
+                    });
+                    layout.append(&state.fonts.font_list, &TextStyle::new("sneaky", 20.0, 0));
+                    screen.rect(
+                        Rect {
+                            x: 32,
+                            y: 185,
+                            w: w as u16 / 3 - 2,
+                            h: HEIGHT as u16 / 6,
+                        },
+                        Rgba(245, 240, 215, 255),
+                    );
+                    screen.empty_rect_no_corners(
+                        Rect {
+                            x: 30,
+                            y: 183,
+                            w: (w as u16 / 3) + 2,
+                            h: (HEIGHT as u16 / 6) + 2,
+                        },
+                        2,
+                        Rgba(110, 45, 15, 255),
+                    );
+                }
                 _ => {}
             }
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(250, 30, 10, 255),
+                Rgba(110, 50, 20, 255),
             );
-            layout.reset(&LayoutSettings {
-                x: 182 as f32,
-                y: 85 as f32,
-                max_height: Some((h/6) as f32),
-                vertical_align: fontdue::layout::VerticalAlign::Middle,
-                max_width: Some(((w)/3) as f32),
-                horizontal_align: fontdue::layout::HorizontalAlign::Center,
-                ..LayoutSettings::default()
-            });
             match state.enemy_choice {
-                Attack::Aggressive => { layout.append(&state.fonts.font_list, &TextStyle::new("aggressive", 20.0, 0)); }
-                Attack::Defensive => { layout.append(&state.fonts.font_list, &TextStyle::new("defensive", 20.0, 0)); }
-                Attack::Sneaky => { layout.append(&state.fonts.font_list, &TextStyle::new("sneaky", 20.0, 0)); }
+                Attack::Aggressive => {
+                    layout.reset(&LayoutSettings {
+                        x: 182.0,
+                        y: 85.0,
+                        max_height: Some((h / 6) as f32),
+                        vertical_align: fontdue::layout::VerticalAlign::Middle,
+                        max_width: Some(((w) / 3) as f32),
+                        horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                        ..LayoutSettings::default()
+                    });
+                    layout.append(
+                        &state.fonts.font_list,
+                        &TextStyle::new("aggressive", 20.0, 0),
+                    );
+                    screen.rect(
+                        Rect {
+                            x: 182,
+                            y: 85,
+                            w: w as u16 / 3,
+                            h: HEIGHT as u16 / 6 - 1,
+                        },
+                        Rgba(245, 240, 215, 255),
+                    );
+                    screen.empty_rect_no_corners(
+                        Rect {
+                            x: 180,
+                            y: 83,
+                            w: (w as u16 / 3) + 2,
+                            h: (HEIGHT as u16 / 6) + 2,
+                        },
+                        2,
+                        Rgba(110, 45, 15, 255),
+                    );
+                }
+                Attack::Defensive => {
+                    layout.reset(&LayoutSettings {
+                        x: 182.0,
+                        y: 135.0,
+                        max_height: Some((h / 6) as f32),
+                        vertical_align: fontdue::layout::VerticalAlign::Middle,
+                        max_width: Some(((w) / 3) as f32),
+                        horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                        ..LayoutSettings::default()
+                    });
+                    layout.append(
+                        &state.fonts.font_list,
+                        &TextStyle::new("defensive", 20.0, 0),
+                    );
+                    screen.rect(
+                        Rect {
+                            x: 182,
+                            y: 135,
+                            w: w as u16 / 3,
+                            h: HEIGHT as u16 / 6 - 1,
+                        },
+                        Rgba(245, 240, 215, 255),
+                    );
+                    screen.empty_rect_no_corners(
+                        Rect {
+                            x: 180,
+                            y: 133,
+                            w: (w as u16 / 3) + 2,
+                            h: (HEIGHT as u16 / 6) + 2,
+                        },
+                        2,
+                        Rgba(110, 45, 15, 255),
+                    );
+                }
+                Attack::Sneaky => {
+                    layout.reset(&LayoutSettings {
+                        x: 182.0,
+                        y: 185.0,
+                        max_height: Some((h / 6) as f32),
+                        vertical_align: fontdue::layout::VerticalAlign::Middle,
+                        max_width: Some(((w) / 3) as f32),
+                        horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                        ..LayoutSettings::default()
+                    });
+                    layout.append(&state.fonts.font_list, &TextStyle::new("sneaky", 20.0, 0));
+                    screen.rect(
+                        Rect {
+                            x: 182,
+                            y: 185,
+                            w: w as u16 / 3,
+                            h: HEIGHT as u16 / 6 - 1,
+                        },
+                        Rgba(245, 240, 215, 255),
+                    );
+                    screen.empty_rect_no_corners(
+                        Rect {
+                            x: 180,
+                            y: 183,
+                            w: (w as u16 / 3) + 2,
+                            h: (HEIGHT as u16 / 6) + 2,
+                        },
+                        2,
+                        Rgba(110, 45, 15, 255),
+                    );
+                }
                 _ => {}
             }
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(250, 30, 10, 255),
+                Rgba(110, 50, 20, 255),
             );
-        },
+        }
         GameMode::FightChoice => {
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
+
+            screen.rect(
+                Rect {
+                    x: 5,
+                    y: 5,
+                    w: (WIDTH - 10) as u16,
+                    h: (HEIGHT - 10) as u16,
+                },
+                Rgba(230, 170, 90, 255),
+            );
+            screen.empty_rect(
+                Rect {
+                    x: 5,
+                    y: 5,
+                    w: (WIDTH - 10) as u16,
+                    h: (HEIGHT - 10) as u16,
+                },
+                5,
+                Rgba(110, 50, 20, 255),
+            );
             screen.draw_health(&state.health);
             screen.draw_health(&state.enemy_health);
-            screen.bitblt(&state.player.image, state.player.frame, Vec2i(32, 32));
-            screen.bitblt(&levels[state.level].1[0].image, levels[state.level].1[0].frame, Vec2i(264, 32));
-            screen.rect(Rect { x: 32, y: 85, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
-            screen.rect(Rect { x: 32, y: 135, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
-            screen.rect(Rect { x: 32, y: 185, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(255, 255, 255, 255));
-            screen.rect(Rect { x: 182, y: 85, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(0, 0, 0, 255));
-            screen.rect(Rect { x: 182, y: 135, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(0, 0, 0, 255));
-            screen.rect(Rect { x: 182, y: 185, w: w as u16 /3, h: HEIGHT as u16 /6 }, Rgba(0, 0, 0, 255));
+            screen.bitblt(
+                &state.player.image,
+                state.player.frame,
+                Vec2i(32, 32),
+                false,
+            );
+            screen.bitblt(
+                &levels[state.level].1[0].image,
+                levels[state.level].1[0].frame,
+                Vec2i(264, 32),
+                true,
+            );
+            screen.rect(
+                Rect {
+                    x: 32,
+                    y: 85,
+                    w: w as u16 / 3 - 2,
+                    h: HEIGHT as u16 / 6,
+                },
+                Rgba(245, 240, 215, 255),
+            );
+            screen.empty_rect_no_corners(
+                Rect {
+                    x: 30,
+                    y: 83,
+                    w: (w as u16 / 3) + 2,
+                    h: (HEIGHT as u16 / 6) + 2,
+                },
+                2,
+                Rgba(110, 45, 15, 255),
+            );
+
+            screen.rect(
+                Rect {
+                    x: 32,
+                    y: 135,
+                    w: w as u16 / 3 - 2,
+                    h: HEIGHT as u16 / 6,
+                },
+                Rgba(245, 240, 215, 255),
+            );
+            screen.empty_rect_no_corners(
+                Rect {
+                    x: 30,
+                    y: 133,
+                    w: (w as u16 / 3) + 2,
+                    h: (HEIGHT as u16 / 6) + 2,
+                },
+                2,
+                Rgba(110, 45, 15, 255),
+            );
+
+            screen.rect(
+                Rect {
+                    x: 32,
+                    y: 185,
+                    w: w as u16 / 3 - 2,
+                    h: HEIGHT as u16 / 6,
+                },
+                Rgba(245, 240, 215, 255),
+            );
+            screen.empty_rect_no_corners(
+                Rect {
+                    x: 30,
+                    y: 183,
+                    w: (w as u16 / 3) + 2,
+                    h: (HEIGHT as u16 / 6) + 2,
+                },
+                2,
+                Rgba(110, 45, 15, 255),
+            );
+
+            screen.rect(
+                Rect {
+                    x: 182,
+                    y: 85,
+                    w: w as u16 / 3,
+                    h: HEIGHT as u16 / 6 - 1,
+                },
+                Rgba(195, 175, 135, 255),
+            );
+            screen.empty_rect_no_corners(
+                Rect {
+                    x: 180,
+                    y: 83,
+                    w: (w as u16 / 3) + 2,
+                    h: (HEIGHT as u16 / 6) + 2,
+                },
+                2,
+                Rgba(110, 45, 15, 255),
+            );
+
+            screen.rect(
+                Rect {
+                    x: 182,
+                    y: 135,
+                    w: w as u16 / 3,
+                    h: HEIGHT as u16 / 6 - 1,
+                },
+                Rgba(195, 175, 135, 255),
+            );
+            screen.empty_rect_no_corners(
+                Rect {
+                    x: 180,
+                    y: 133,
+                    w: (w as u16 / 3) + 2,
+                    h: (HEIGHT as u16 / 6) + 2,
+                },
+                2,
+                Rgba(110, 45, 15, 255),
+            );
+
+            screen.rect(
+                Rect {
+                    x: 182,
+                    y: 185,
+                    w: w as u16 / 3,
+                    h: HEIGHT as u16 / 6,
+                },
+                Rgba(195, 175, 135, 255),
+            );
+            screen.empty_rect_no_corners(
+                Rect {
+                    x: 180,
+                    y: 183,
+                    w: (w as u16 / 3) + 2,
+                    h: (HEIGHT as u16 / 6) + 2,
+                },
+                2,
+                Rgba(110, 45, 15, 255),
+            );
+
             let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
             layout.reset(&LayoutSettings {
-                x: 32 as f32,
-                y: 85 as f32,
-                max_height: Some((h/6) as f32),
+                x: 32.0,
+                y: 85.0,
+                max_height: Some((h / 6) as f32),
                 vertical_align: fontdue::layout::VerticalAlign::Middle,
-                max_width: Some(((w)/3) as f32),
+                max_width: Some(((w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("[a]ggressive", 20.0, 0));
+            layout.append(
+                &state.fonts.font_list,
+                &TextStyle::new("[a]ggressive", 20.0, 0),
+            );
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(250, 30, 10, 255),
+                Rgba(110, 50, 20, 255),
             );
             layout.reset(&LayoutSettings {
-                x: 32 as f32,
-                y: 135 as f32,
-                max_height: Some((h/6)  as f32),
+                x: 32.0,
+                y: 135.0,
+                max_height: Some((h / 6) as f32),
                 vertical_align: fontdue::layout::VerticalAlign::Middle,
-                max_width: Some(((w)/3) as f32),
+                max_width: Some(((w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("[d]efensive", 20.0, 0));
+            layout.append(
+                &state.fonts.font_list,
+                &TextStyle::new("[d]efensive", 20.0, 0),
+            );
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(250, 30, 10, 255),
+                Rgba(110, 50, 20, 255),
             );
             layout.reset(&LayoutSettings {
-                x: 32 as f32,
-                y: 185 as f32,
-                max_height: Some((h/6)  as f32),
+                x: 32.0,
+                y: 185.0,
+                max_height: Some((h / 6) as f32),
                 vertical_align: fontdue::layout::VerticalAlign::Middle,
-                max_width: Some(((w)/3) as f32),
+                max_width: Some(((w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
@@ -526,15 +884,68 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
-                Rgba(250, 30, 10, 255),
+                Rgba(110, 50, 20, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: 182.0,
+                y: 85.0,
+                max_height: Some((h / 6) as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w) / 3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("...", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(110, 50, 20, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: 182.0,
+                y: 135.0,
+                max_height: Some((h / 6) as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w) / 3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("...", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(110, 50, 20, 255),
+            );
+            layout.reset(&LayoutSettings {
+                x: 182.0,
+                y: 185.0,
+                max_height: Some((h / 6) as f32),
+                vertical_align: fontdue::layout::VerticalAlign::Middle,
+                max_width: Some(((w) / 3) as f32),
+                horizontal_align: fontdue::layout::HorizontalAlign::Center,
+                ..LayoutSettings::default()
+            });
+            layout.append(&state.fonts.font_list, &TextStyle::new("...", 20.0, 0));
+            screen.draw_text(
+                &mut state.fonts.rasterized,
+                &state.fonts.font_list[0],
+                &mut layout,
+                Rgba(110, 50, 20, 255),
             );
         }
         GameMode::GameOver => {
-            state.window = Vec2i(0,0);
+            state.window = Vec2i(0, 0);
 
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
-            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+            let menu_rect = Rect {
+                x: w / 6,
+                y: h / 8,
+                w: (2 * w as u16) / 3,
+                h: (h as u16) / 2,
+            };
 
             screen.rect(menu_rect, Rgba(53, 40, 33, 255));
             screen.empty_rect(menu_rect, 4, Rgba(250, 30, 10, 255));
@@ -543,11 +954,14 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
                 y: (HEIGHT / 6) as f32,
-                max_width: Some(((2*w)/3) as f32),
+                max_width: Some(((2 * w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("GAME\nOVER", 45.0, 0));
+            layout.append(
+                &state.fonts.font_list,
+                &TextStyle::new("GAME\nOVER", 45.0, 0),
+            );
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
@@ -557,23 +971,31 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
                 y: (HEIGHT / 2) as f32,
-                max_width: Some(((2*w)/3) as f32),
+                max_width: Some(((2 * w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to play again", 20.0, 0));
+            layout.append(
+                &state.fonts.font_list,
+                &TextStyle::new("Press ENTER to play again", 20.0, 0),
+            );
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
                 &mut layout,
                 Rgba(250, 30, 10, 255),
             );
-        },
+        }
         GameMode::Win => {
-            state.window = Vec2i(0,0);
+            state.window = Vec2i(0, 0);
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
-            let menu_rect = Rect{x: w/6, y: h/8, w: (2*w as u16)/3, h: (h as u16)/2};
+            let menu_rect = Rect {
+                x: w / 6,
+                y: h / 8,
+                w: (2 * w as u16) / 3,
+                h: (h as u16) / 2,
+            };
 
             screen.rect(menu_rect, Rgba(53, 40, 33, 255));
             screen.empty_rect(menu_rect, 4, Rgba(250, 30, 10, 255));
@@ -582,7 +1004,7 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
                 y: (HEIGHT / 6) as f32,
-                max_width: Some(((2*w)/3) as f32),
+                max_width: Some(((2 * w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
@@ -596,11 +1018,14 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             layout.reset(&LayoutSettings {
                 x: (WIDTH / 6) as f32,
                 y: (HEIGHT / 2) as f32,
-                max_width: Some(((2*w)/3) as f32),
+                max_width: Some(((2 * w) / 3) as f32),
                 horizontal_align: fontdue::layout::HorizontalAlign::Center,
                 ..LayoutSettings::default()
             });
-            layout.append(&state.fonts.font_list, &TextStyle::new("Press ENTER to play again", 20.0, 0));
+            layout.append(
+                &state.fonts.font_list,
+                &TextStyle::new("Press ENTER to play again", 20.0, 0),
+            );
             screen.draw_text(
                 &mut state.fonts.rasterized,
                 &state.fonts.font_list[0],
@@ -609,11 +1034,9 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
             );
         }
     }
-
 }
 
 fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, levels: &Vec<Level>) {
-
     match state.mode {
         GameMode::Title => {
             if input.key_held(VirtualKeyCode::Return) {
@@ -624,16 +1047,16 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             if input.key_held(VirtualKeyCode::Right) {
                 // TODO: Add Accel?
                 state.player.position.0 += 2;
-                // TODO: Maybe Animation?
+            // TODO: Maybe Animation?
             } else if input.key_held(VirtualKeyCode::Left) {
                 // TODO: Add accel?
                 state.player.position.0 -= 2;
                 // TODO: Maybe Animation?
-            } 
+            }
             if input.key_held(VirtualKeyCode::Up) {
                 // TODO: Add Accel?
                 state.player.position.1 -= 2;
-                // TODO: Maybe Animation?
+            // TODO: Maybe Animation?
             } else if input.key_held(VirtualKeyCode::Down) {
                 // TODO: Add accel?
                 state.player.position.1 += 2;
@@ -646,30 +1069,42 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             if !state.passed {
                 statics = &levels[state.level].1;
             }
-            gather_contacts(&levels[state.level].0[0], &state.player, statics, &mut state.contacts);
+            gather_contacts(
+                &levels[state.level].0[0],
+                &state.player,
+                statics,
+                &mut state.contacts,
+            );
 
-            match restitute(&levels[state.level].0[0], &mut state.player, statics, &mut state.contacts) {
+            match restitute(
+                &levels[state.level].0[0],
+                &mut state.player,
+                statics,
+                &mut state.contacts,
+            ) {
                 Effect::Fight => {
                     state.mode = GameMode::FightChoice;
-                    
-                },
-                Effect::Win => { 
+                }
+                Effect::Win => {
                     state.mode = GameMode::GameOver;
-                },
+                }
                 _ => {}
             }
 
-            if state.player.position.0 < 192 && state.player.position.0 > 160 && state.player.position.1 < 8 {
+            if state.player.position.0 < 192
+                && state.player.position.0 > 160
+                && state.player.position.1 < 8
+            {
                 state.level += 1;
                 state.player.position = Vec2i(128, 352);
                 state.window = Vec2i(0, 128);
                 state.passed = false;
             }
 
-            if state.player.position.1 > (state.window.1 + HEIGHT as i32 - 32)  {
+            if state.player.position.1 > (state.window.1 + HEIGHT as i32 - 32) {
                 state.window.1 += 2;
-                if state.window.1 > HEIGHT as i32*2 {
-                    state.window.1 = HEIGHT as i32*2;
+                if state.window.1 > HEIGHT as i32 * 2 {
+                    state.window.1 = HEIGHT as i32 * 2;
                 }
             }
             if state.player.position.1 < (state.window.1 + 32) {
@@ -680,7 +1115,11 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             }
         }
         GameMode::FightChoice => {
-            let enemy_choice = get_enemy_decision(state.health.lives, state.enemy_health.lives, levels[state.level].2);
+            let enemy_choice = get_enemy_decision(
+                state.health.lives,
+                state.enemy_health.lives,
+                levels[state.level].2,
+            );
             let mut rng = rand::thread_rng();
             state.enemy_choice = enemy_choice;
 
@@ -688,16 +1127,16 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 state.mode = GameMode::Map;
                 state.passed = true;
             }
-            if input.key_released(VirtualKeyCode::A) {
+            if input.key_held(VirtualKeyCode::A) {
                 state.player_choice = Attack::Aggressive;
                 match enemy_choice {
-                    Attack::Aggressive => {},
+                    Attack::Aggressive => {}
                     Attack::Defensive => {
                         let decision = rng.gen_bool(0.5);
                         if decision && state.enemy_health.lives < levels[state.level].2 {
                             state.enemy_health.lives += 1;
                         }
-                    },
+                    }
                     Attack::Sneaky => {
                         if state.enemy_health.lives < 1 {
                             state.enemy_health.lives = 0;
@@ -710,7 +1149,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 state.mode = GameMode::Fight;
                 state.choice_frame = frame;
             }
-            if input.key_released(VirtualKeyCode::S) {
+            if input.key_held(VirtualKeyCode::S) {
                 state.player_choice = Attack::Sneaky;
                 match enemy_choice {
                     Attack::Aggressive => {
@@ -719,7 +1158,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                         } else {
                             state.health.lives -= 1;
                         }
-                    },
+                    }
                     Attack::Defensive => {
                         let decision = rng.gen_bool(0.25);
                         if decision {
@@ -729,14 +1168,14 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                                 state.enemy_health.lives -= 3;
                             }
                         }
-                    },
-                    Attack::Sneaky => {},
+                    }
+                    Attack::Sneaky => {}
                     _ => {}
                 }
                 state.mode = GameMode::Fight;
                 state.choice_frame = frame;
             }
-            if input.key_released(VirtualKeyCode::D) {
+            if input.key_held(VirtualKeyCode::D) {
                 state.player_choice = Attack::Defensive;
                 match enemy_choice {
                     Attack::Aggressive => {
@@ -744,8 +1183,8 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                         if decision && state.health.lives < 5 {
                             state.health.lives += 1;
                         }
-                    },
-                    Attack::Defensive => {},
+                    }
+                    Attack::Defensive => {}
                     Attack::Sneaky => {
                         let decision = rng.gen_bool(0.25);
                         if decision {
@@ -755,7 +1194,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                                 state.health.lives -= 3;
                             }
                         }
-                    },
+                    }
                     _ => {}
                 }
                 state.mode = GameMode::Fight;
@@ -771,7 +1210,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                     state.passed = true;
                 } else if state.health.lives == 0 {
                     state.mode = GameMode::GameOver;
-                } else { 
+                } else {
                     state.mode = GameMode::FightChoice;
                 }
             }
@@ -811,7 +1250,7 @@ fn reset_game(state: &mut GameState, levels: &[Level]) {
     state.enemy_choice = Attack::Nothing;
     state.choice_frame = 0;
     state.contacts.clear();
-    state.window = Vec2i(0,0);
+    state.window = Vec2i(0, 0);
     state.level = 0;
     state.passed = false;
 }
