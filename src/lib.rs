@@ -1,3 +1,4 @@
+pub mod animation;
 pub mod collision;
 pub mod health;
 pub mod screen;

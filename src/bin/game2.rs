@@ -13,6 +13,7 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use Unit2_2D::{
+    animation::*,
     collision::*,
     health::*,
     screen::Screen,
@@ -37,8 +38,6 @@ enum GameMode {
 struct GameState {
     mode: GameMode,
     player: Sprite,
-    // TODO: Add in a way to keep track of the enemies for each level
-    // Change this maybe? Hearts vs health bar
     health: HealthStatus,
     enemy_health: HealthStatus,
     player_choice: Attack,
@@ -47,8 +46,6 @@ struct GameState {
     contacts: Vec<Contact>,
     window: Vec2i,
     level: usize,
-    // TODO: Add in game state when we have implementation from game 1
-    // TODO: Create a way to display the fighting mode
     passed: bool,
     fonts: Fonts,
 }
@@ -100,6 +97,65 @@ fn main() {
         &level_tex,
     ));
 
+    let animations: Vec<Animation> = vec![
+        Animation {
+            frames: vec![Rect {
+                x: 24,
+                y: 0,
+                w: 20,
+                h: 24,
+            },
+            Rect {
+                x: 48,
+                y: 0,
+                w: 20,
+                h: 24,
+            },],
+            times: vec![5, 5],
+            looping: true,
+        },
+        Animation {
+            frames: vec![Rect {
+                x: 96,
+                y: 0,
+                w: 20,
+                h: 24,
+            },
+            Rect {
+                x: 120,
+                y: 0,
+                w: 20,
+                h: 24,
+            },
+            Rect {
+                x: 144,
+                y: 0,
+                w: 20,
+                h: 24,
+            },
+            Rect {
+                x: 168,
+                y: 0,
+                w: 20,
+                h: 24,
+            },
+            Rect {
+                x: 192,
+                y: 0,
+                w: 20,
+                h: 24,
+            },
+            Rect {
+                x: 216,
+                y: 0,
+                w: 20,
+                h: 24,
+            },],
+            times: vec![3, 3, 3, 3, 3, 3],
+            looping: true,
+        },
+    ];
+
     let levels: Vec<Level> = vec![
         (vec![Tilemap::new(
             Vec2i(0, 0),
@@ -136,6 +192,9 @@ fn main() {
             },
             Vec2i(164, 32),
             true,
+            0,
+            0,
+            AnimationState::Nothing,
             Effect::Fight,
         )], 3),
         (vec![Tilemap::new(
@@ -177,6 +236,9 @@ fn main() {
             },
             Vec2i(164, 32),
             true,
+            0,
+            0,
+            AnimationState::Nothing,
             Effect::Fight
         )], 4),
         (vec![Tilemap::new(
@@ -218,6 +280,9 @@ fn main() {
             },
             Vec2i(164, 32),
             true,
+            0,
+            0,
+            AnimationState::Nothing,
             Effect::Fight,
         )], 5),
         (vec![Tilemap::new(
@@ -249,6 +314,9 @@ fn main() {
             },
             Vec2i(128, 128),
             true,
+            0,
+            0,
+            AnimationState::Nothing,
             Effect::Win,
             ),
         ], 0),
@@ -266,6 +334,9 @@ fn main() {
             },
             Vec2i(136, 224),
             true,
+            0,
+            0,
+            AnimationState::Standing_Right,
             Effect::Nothing
         ),
         health: HealthStatus{
@@ -315,7 +386,7 @@ fn main() {
             let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH, state.window);
             screen.clear(Rgba(0, 0, 0, 0));
 
-            draw_game(&mut state, &mut screen, &levels);
+            draw_game(&mut state, &mut screen, &levels, &animations, frame_count);
 
             // Flip buffers
             if pixels.render().is_err() {
@@ -356,7 +427,7 @@ fn main() {
     });
 }
 
-fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
+fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>, animations: &[Animation], frame: usize) {
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
 
@@ -411,6 +482,9 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>) {
                     screen.draw_sprite(&s);
                 }
             }
+
+            // TODO: With reversed bitblt, reverse left facing animations
+            state.player.frame = animations[state.player.animation].current_frame(state.player.animation_start, frame);
             screen.draw_sprite(&state.player);
         }
         GameMode::Fight => {
@@ -622,22 +696,54 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
         }
         GameMode::Map => {
             if input.key_held(VirtualKeyCode::Right) {
-                // TODO: Add Accel?
                 state.player.position.0 += 2;
-                // TODO: Maybe Animation?
+                if state.player.animation_state != AnimationState::Walking_Right {
+                    state.player.animation = 1;
+                    state.player.animation_state = AnimationState::Walking_Right;
+                    state.player.animation_start = frame;
+                }
             } else if input.key_held(VirtualKeyCode::Left) {
-                // TODO: Add accel?
                 state.player.position.0 -= 2;
-                // TODO: Maybe Animation?
-            } 
-            if input.key_held(VirtualKeyCode::Up) {
-                // TODO: Add Accel?
+                if state.player.animation_state != AnimationState::Walking_Left {
+                    state.player.animation = 1;
+                    state.player.animation_state = AnimationState::Walking_Left;
+                    state.player.animation_start = frame;
+                }
+            } else if input.key_held(VirtualKeyCode::Up) {
                 state.player.position.1 -= 2;
-                // TODO: Maybe Animation?
+                if state.player.animation_state != AnimationState::Walking_Left && state.player.animation_state != AnimationState::Walking_Right {
+                    if state.player.animation_state == AnimationState::Standing_Right {
+                        state.player.animation_state = AnimationState::Walking_Right;
+                    }
+                    if state.player.animation_state == AnimationState::Standing_Left {
+                        state.player.animation_state = AnimationState::Walking_Left;
+                    }
+                    state.player.animation = 1;
+                    state.player.animation_start = frame;
+                }
             } else if input.key_held(VirtualKeyCode::Down) {
-                // TODO: Add accel?
                 state.player.position.1 += 2;
-                // TODO: Maybe Animation?
+                if state.player.animation_state != AnimationState::Walking_Left && state.player.animation_state != AnimationState::Walking_Right {
+                    if state.player.animation_state == AnimationState::Standing_Right {
+                        state.player.animation_state = AnimationState::Walking_Right;
+                    }
+                    if state.player.animation_state == AnimationState::Standing_Left {
+                        state.player.animation_state = AnimationState::Walking_Left;
+                    }
+                    state.player.animation = 1;
+                    state.player.animation_start = frame;
+                }
+            } else {
+                if state.player.animation_state != AnimationState::Standing_Left && state.player.animation_state != AnimationState::Standing_Right {
+                    if state.player.animation_state == AnimationState::Walking_Right {
+                        state.player.animation_state = AnimationState::Standing_Right;
+                    }
+                    if state.player.animation_state == AnimationState::Walking_Left {
+                        state.player.animation_state = AnimationState::Standing_Left;
+                    }
+                    state.player.animation = 0;
+                    state.player.animation_start = frame;
+                }
             }
 
             // Detect collisions: See if the player is collided with an obstacle
@@ -654,7 +760,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                     
                 },
                 Effect::Win => { 
-                    state.mode = GameMode::GameOver;
+                    state.mode = GameMode::Win;
                 },
                 _ => {}
             }

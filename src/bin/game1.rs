@@ -12,6 +12,7 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use Unit2_2D::{
+    animation::*,
     collision::*,
     health::*,
     screen::Screen,
@@ -126,7 +127,38 @@ fn main() {
             &obs_set,
             vec![6;40])];
 
-
+    let animations: Vec<Animation> = vec![
+        Animation {
+            frames: vec![Rect {
+                x: 0,
+                y: 0,
+                w: 16,
+                h: 16,
+            },],
+            times: vec![1],
+            looping: true,
+        },
+        Animation {
+            frames: vec![Rect {
+                x: 16,
+                y: 0,
+                w: 16,
+                h: 16,
+            },],
+            times: vec![1],
+            looping: true,
+        },
+        Animation {
+            frames: vec![Rect {
+                x: 32,
+                y: 0,
+                w: 16,
+                h: 16,
+            },],
+            times: vec![1],
+            looping: true,
+        },
+    ];
     
     let mut state = GameState {
         mode: GameMode::Title,
@@ -140,7 +172,10 @@ fn main() {
             },
             Vec2i(160, 20),
             true,
-            Effect::Nothing
+            0,
+            0,
+            AnimationState::Facing_Forwad,
+            Effect::Nothing,
         ),
         spawn_timer: 0,
         scroll_speed: 3,
@@ -186,7 +221,7 @@ fn main() {
             let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH, Vec2i(0, 0));
             screen.clear(Rgba(0, 0, 0, 0));
 
-            draw_game(&mut state, &mut screen);
+            draw_game(&mut state, &mut screen, frame_count, &animations);
 
             // Flip buffers
             if pixels.render().is_err() {
@@ -227,7 +262,7 @@ fn main() {
     });
 }
 
-fn draw_game(state: &mut GameState, screen: &mut Screen) {
+fn draw_game(state: &mut GameState, screen: &mut Screen, frame: usize, animations: &[Animation]) {
     // Note: I had to make state mut to change the rasterized hashmap as needed
     // Call screen's drawing methods to render the game state
     screen.clear(Rgba(80, 80, 80, 255));
@@ -277,13 +312,12 @@ fn draw_game(state: &mut GameState, screen: &mut Screen) {
 
         }
         GameMode::Playing => {
-            // TODO: Draw tiles
             state.map.draw(screen);
             for map in state.obstacle_maps.iter(){
               map.draw(screen);
             }
 
-            // TODO: Draw Sprites
+            state.player.frame = animations[state.player.animation].current_frame(state.player.animation_start, frame);
             screen.draw_sprite(&state.player);
             screen.draw_health(&state.health);
         }
@@ -387,17 +421,25 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
             // Player control goes here
 
             if input.key_held(VirtualKeyCode::Right) {
-                // TODO: Add Accel?
                 state.player.position.0 += 2;
-                state.player.frame.x = 32;
-            // TODO: Maybe Animation?
+                if state.player.animation_state != AnimationState::Standing_Right {
+                    state.player.animation = 2;
+                    state.player.animation_state = AnimationState::Standing_Right;
+                    state.player.animation_start = frame;
+                }
             } else if input.key_held(VirtualKeyCode::Left) {
-                // TODO: Add accel?
                 state.player.position.0 -= 2;
-                state.player.frame.x = 16;
-            // TODO: Maybe Animation?
+                if state.player.animation_state != AnimationState::Standing_Left {
+                    state.player.animation = 1;
+                    state.player.animation_state = AnimationState::Standing_Left;
+                    state.player.animation_start = frame;
+                }
             } else {
-                state.player.frame.x = 0;
+                if state.player.animation_state != AnimationState::Facing_Forwad {
+                    state.player.animation = 0;
+                    state.player.animation_state = AnimationState::Facing_Forwad;
+                    state.player.animation_start = frame;
+                }
             }
 
 
