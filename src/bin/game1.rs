@@ -12,13 +12,7 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use Unit2_2D::{
-    animation::*,
-    collision::*,
-    health::*,
-    screen::Screen,
-    sprite::*,
-    texture::Texture,
-    tiles::*,
+    animation::*, collision::*, health::*, screen::Screen, sprite::*, text::*, texture::Texture, tiles::*,
     types::*,
 };
 

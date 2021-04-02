@@ -13,13 +13,7 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use Unit2_2D::{
-    animation::*,
-    collision::*,
-    health::*,
-    screen::Screen,
-    sprite::*,
-    texture::Texture,
-    tiles::*,
+    animation::*, collision::*, health::*, screen::Screen, sprite::*, text::*, texture::Texture, tiles::*,
     types::*,
 };
 
@@ -85,7 +79,7 @@ fn main() {
         {
             (0..64)
                 .map(|i| {
-                    (if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18 {
+                    if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18 {
                         Tile {
                             solid: true,
                             collide: Effect::Nothing,
@@ -95,7 +89,7 @@ fn main() {
                             solid: false,
                             collide: Effect::Nothing,
                         }
-                    })
+                    }
                 })
                 .collect()
         },
@@ -500,6 +494,7 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>, an
             screen.draw_sprite(&state.player);
         }
         GameMode::Fight => {
+            state.window = Vec2i(0, 0);
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
             screen.rect(
@@ -754,6 +749,7 @@ fn draw_game(state: &mut GameState, screen: &mut Screen, levels: &Vec<Level>, an
             );
         }
         GameMode::FightChoice => {
+            state.window = Vec2i(0, 0);
             let w = WIDTH as i32;
             let h = HEIGHT as i32;
 
