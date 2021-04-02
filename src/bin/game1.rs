@@ -183,6 +183,22 @@ fn main() {
             times: vec![1],
             looping: true,
         },
+        Animation {
+            frames: vec![Rect {
+                x: 0,
+                y: 0,
+                w: 16,
+                h: 16,
+            },
+            Rect {
+                x: 48,
+                y: 4,
+                w: 16,
+                h: 23,
+            },],
+            times: vec![1, 30],
+            looping: false,
+        }
     ];
     
     let mut state = GameState {
@@ -477,7 +493,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
                     state.player.animation_start = frame;
                 }
             } else {
-                if state.player.animation_state != AnimationState::Facing_Forwad {
+                if state.player.animation_state != AnimationState::Facing_Forwad && state.player.animation_state != AnimationState::Fallen {
                     state.player.animation = 0;
                     state.player.animation_state = AnimationState::Facing_Forwad;
                     state.player.animation_start = frame;
@@ -500,12 +516,17 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
             for vec in state.obstacle_maps.iter() {
                 gather_contacts(&vec, &state.player, &[], &mut state.contacts);
             }
-            // TODO: Handle collisions: Take damage, speed up, or slow down
+            // Handle collisions: Take damage, speed up, or slow down
             state.immunities[0] -= 1;
             state.immunities[1] -= 1;
             match restitute(&state.map, &mut state.player, &[], &mut state.contacts) {
                 //match collision_effect(&state.player, &mut state.obstacles){
                 Effect::Hurt(n) => {
+                    if state.player.animation_state != AnimationState::Fallen {
+                        state.player.animation = 3;
+                        state.player.animation_state = AnimationState::Fallen;
+                        state.player.animation_start = frame;
+                    }
                     if state.immunities[0] <= 0 {
                         if state.health.lives > n {
                             state.immunities[0] = 48;

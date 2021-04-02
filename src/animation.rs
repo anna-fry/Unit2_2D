@@ -16,6 +16,7 @@ pub enum AnimationState {
     Walking_Left,
     Walking_Right,
     Facing_Forwad,
+    Fallen,
     Nothing,
 }
 
