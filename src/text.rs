@@ -1,8 +1,6 @@
-use std::collections::HashMap;
 use crate::types::{Rect, Vec2i};
-use fontdue::{
-    Font, Metrics,
-};
+use fontdue::{Font, Metrics};
+use std::collections::HashMap;
 
 const NUM_FONTS: usize = 1;
 

@@ -35,7 +35,7 @@ pub struct Vec2i(pub i32, pub i32);
 pub struct Rgba(pub u8, pub u8, pub u8, pub u8);
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
-pub enum Effect{
+pub enum Effect {
     Speedup(usize),
     Hurt(usize),
     Fight,
@@ -44,7 +44,7 @@ pub enum Effect{
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
-pub enum Attack{
+pub enum Attack {
     Aggressive,
     Defensive,
     Sneaky,

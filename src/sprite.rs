@@ -2,7 +2,6 @@ use crate::{animation::AnimationState, texture::Texture};
 use crate::types::{Rect, Vec2i, Effect};
 use std::rc::Rc;
 
-
 #[derive(Clone)]
 pub struct Sprite {
     pub image: Rc<Texture>,
@@ -16,7 +15,16 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(image: &Rc<Texture>, frame: Rect, position: Vec2i, drawable: bool, animation: usize, animation_start: usize, animation_state: AnimationState, collision: Effect) -> Self {
+    pub fn new(
+            image: &Rc<Texture>, 
+            frame: Rect, 
+            position: Vec2i, 
+            drawable: bool, 
+            animation: usize, 
+            animation_start: usize, 
+            animation_state: AnimationState, 
+            collision: Effect
+    ) -> Self {
         Self {
             image: Rc::clone(image),
             frame,
@@ -43,7 +51,7 @@ impl<'fb> DrawSpriteExt for Screen<'fb> {
         // This works because we're only using a public method of Screen here,
         // and the private fields of sprite are visible inside this module
         if s.drawable {
-            self.bitblt(&s.image, s.frame, s.position);
+            self.bitblt(&s.image, s.frame, s.position, false);
         }
     }
 }
