@@ -34,6 +34,7 @@ struct GameState {
     health: HealthStatus,
     enemy_health: HealthStatus,
     player_choice: Attack,
+    thresholds:Vec<usize>,
     enemy_choice: Attack,
     choice_frame: usize,
     contacts: Vec<Contact>,
@@ -41,6 +42,7 @@ struct GameState {
     level: usize,
     passed: bool,
     fonts: Fonts,
+
 }
 
 const WIDTH: usize = 320;
@@ -359,6 +361,7 @@ fn main() {
             spacing: 18,
         },
         player_choice: Attack::Nothing,
+        thresholds: vec![33,33,33],
         enemy_choice: Attack::Nothing,
         choice_frame: 0,
         contacts: vec![],
@@ -1223,19 +1226,17 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             }
         }
         GameMode::FightChoice => {
-            let enemy_choice = get_enemy_decision(
-                state.health.lives,
-                state.enemy_health.lives,
-                levels[state.level].2,
-            );
-            let mut rng = rand::thread_rng();
-            state.enemy_choice = enemy_choice;
-
             if input.key_held(VirtualKeyCode::Return) {
                 state.mode = GameMode::Map;
                 state.passed = true;
             }
-            if input.key_held(VirtualKeyCode::A) {
+            else if input.key_held(VirtualKeyCode::A) {
+                let enemy_choice = get_enemy_decision(
+                    state,
+                    levels[state.level].2,
+                );
+                let mut rng = rand::thread_rng();
+                state.enemy_choice = enemy_choice;
                 state.player_choice = Attack::Aggressive;
                 match enemy_choice {
                     Attack::Aggressive => {}
@@ -1244,12 +1245,16 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                         if decision && state.enemy_health.lives < levels[state.level].2 {
                             state.enemy_health.lives += 1;
                         }
+                        else{
+                            state.health.lives -=1;
+                        }
                     }
                     Attack::Sneaky => {
-                        if state.enemy_health.lives < 1 {
+                        let damage = rng.gen_range(1,3);
+                        if state.enemy_health.lives < damage {
                             state.enemy_health.lives = 0;
                         } else {
-                            state.enemy_health.lives -= 1;
+                            state.enemy_health.lives -= damage;
                         }
                     }
                     _ => {}
@@ -1257,25 +1262,31 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 state.mode = GameMode::Fight;
                 state.choice_frame = frame;
             }
-            if input.key_held(VirtualKeyCode::S) {
+            else if input.key_held(VirtualKeyCode::S) {
+                let enemy_choice = get_enemy_decision(
+                    state,
+                    levels[state.level].2,
+                );
+                let mut rng = rand::thread_rng();
+                state.enemy_choice = enemy_choice;
                 state.player_choice = Attack::Sneaky;
                 match enemy_choice {
                     Attack::Aggressive => {
-                        if state.health.lives < 1 {
+                        let damage = rng.gen_range(1,3);
+                        if state.health.lives < damage {
                             state.health.lives = 0;
                         } else {
-                            state.health.lives -= 1;
+                            state.health.lives -= damage;
                         }
                     }
                     Attack::Defensive => {
-                        let decision = rng.gen_bool(0.25);
-                        if decision {
-                            if state.enemy_health.lives < 3 {
-                                state.enemy_health.lives = 0;
-                            } else {
-                                state.enemy_health.lives -= 3;
-                            }
+                        let damage = rng.gen_range(0,4);
+                        if state.enemy_health.lives < damage {
+                            state.enemy_health.lives = 0;
+                        } else {
+                            state.enemy_health.lives -= damage;
                         }
+                        
                     }
                     Attack::Sneaky => {}
                     _ => {}
@@ -1283,7 +1294,13 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                 state.mode = GameMode::Fight;
                 state.choice_frame = frame;
             }
-            if input.key_held(VirtualKeyCode::D) {
+            else if input.key_held(VirtualKeyCode::D) {
+                let enemy_choice = get_enemy_decision(
+                    state,
+                    levels[state.level].2,
+                );
+                let mut rng = rand::thread_rng();
+                state.enemy_choice = enemy_choice;
                 state.player_choice = Attack::Defensive;
                 match enemy_choice {
                     Attack::Aggressive => {
@@ -1291,17 +1308,19 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
                         if decision && state.health.lives < 5 {
                             state.health.lives += 1;
                         }
+                        else{
+                            state.enemy_health.lives -=1;
+                        }
                     }
                     Attack::Defensive => {}
                     Attack::Sneaky => {
-                        let decision = rng.gen_bool(0.25);
-                        if decision {
-                            if state.health.lives < 3 {
-                                state.health.lives = 0;
-                            } else {
-                                state.health.lives -= 3;
-                            }
+                        let damage = rng.gen_range(0,4);   
+                        if state.health.lives < damage {
+                            state.health.lives = 0;
+                        } else {
+                            state.health.lives -= damage;
                         }
+                        
                     }
                     _ => {}
                 }
@@ -1338,17 +1357,45 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
     }
 }
 
-fn get_enemy_decision(player_health: usize, enemy_health: usize, enemy_cap: usize) -> Attack {
+
+
+fn get_enemy_decision(state: &mut GameState, enemy_cap: usize) -> Attack {
     let mut rng = rand::thread_rng();
-    let decision = rng.gen_range(0, 100);
-    if decision < 33 {
-        Attack::Defensive
-    } else if decision < 66 {
+    let player_health = state.health.lives;
+    let enemy_health = state.enemy_health.lives;
+    let mut thresholds = state.thresholds.clone();
+    if enemy_health == enemy_cap{// at full hp, less likely to defend
+        thresholds[2] /=2;
+    }
+    else if enemy_cap /enemy_health >=2 {//half health, more likely to defend
+        thresholds[2] *= 2;
+    }
+    if player_health >= 4{ //player can still be crit, more likely to sneak attack
+        thresholds[1] = thresholds[1] *2;
+    }
+    else if player_health <=2{ //player low health - more likely to be aggressive and finish them
+        thresholds[1] = thresholds[1]*2/3;
+        thresholds[0] *=2;
+    }
+
+    let decision = rng.gen_range(0, thresholds[0]+ thresholds[1] + thresholds[2]);
+    
+    //debugging prints
+    // print!("\n player health: {}, enemy health {}, enemy cap {}", player_health, enemy_health, enemy_cap);
+    // print!("\n decision: {} thresholds [{} (A), {} (S), {} (D)]", decision, thresholds[0], thresholds[1], thresholds[2]);
+    // print!("");
+    if decision < thresholds[0] {
+        state.thresholds[0] = (state.thresholds[0] -2).max(5);
         Attack::Aggressive
-    } else {
+    } else if decision < thresholds[0] + thresholds[1] {
+        state.thresholds[1] = (state.thresholds[1] -2).max(5);
         Attack::Sneaky
+    } else {
+        state.thresholds[2] = (state.thresholds[2] -2).max(5);
+        Attack::Defensive
     }
 }
+
 
 fn reset_game(state: &mut GameState, levels: &[Level]) {
     state.player.position = Vec2i(136, 224);
@@ -1361,4 +1408,5 @@ fn reset_game(state: &mut GameState, levels: &[Level]) {
     state.window = Vec2i(0, 0);
     state.level = 0;
     state.passed = false;
+    state.thresholds = vec![33,33,33]
 }
