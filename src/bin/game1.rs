@@ -30,6 +30,7 @@ struct GameState {
     obstacle_maps: Vec<Tilemap>,
     player_velocity: f32,
     scroll_speed: usize,
+    scroll_timer: usize,
     map: Tilemap,
     health: HealthStatus,
     contacts: Vec<Contact>,
@@ -219,7 +220,8 @@ fn main() {
             Effect::Nothing,
         ),
         player_velocity: 0.0,
-        scroll_speed: 3,
+        scroll_speed: 2,
+        scroll_timer: 100,
         map: Tilemap::new(
             Vec2i(0, 0),
             (10, 10),
@@ -480,7 +482,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
 
             if input.key_held(VirtualKeyCode::Right) {
                 state.player_velocity = (state.player_velocity + 0.75).min(3.0);
-                if state.player.animation_state != AnimationState::Standing_Right {
+                if state.player.animation_state != AnimationState::Standing_Right{
                     state.player.animation = 2;
                     state.player.animation_state = AnimationState::Standing_Right;
                     state.player.animation_start = frame;
@@ -507,7 +509,13 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
                     state.player.animation_start = frame;
                 }
             }
-
+            if state.scroll_timer <= 0{
+                state.scroll_timer = 150;
+                state.scroll_speed +=1;
+            }
+            else{
+                state.scroll_timer -=1;
+            }
             state.player.position.1 = 30;
             state.player.position.0 += state.player_velocity as i32;
 
@@ -531,16 +539,17 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
             match restitute(&state.map, &mut state.player, &[], &mut state.contacts) {
                 //match collision_effect(&state.player, &mut state.obstacles){
                 Effect::Hurt(n) => {
-                    if state.player.animation_state != AnimationState::Fallen {
+                    if state.immunities[0] <= 0 {
                         state.player.animation = 3;
                         state.player.animation_state = AnimationState::Fallen;
                         state.player.animation_start = frame;
-                    }
-                    if state.immunities[0] <= 0 {
+                        update_obstacles(state);
+                        update_tiles(state);                
                         if state.health.lives > n {
-                            state.immunities[0] = 48;
+                            state.immunities[0] = 100;
+                            state.scroll_timer = 15;
                             state.health.lives -= n;
-                            state.scroll_speed = 1;
+                            state.scroll_speed = 0;
                         } else {
                             state.mode = GameMode::GameOver;
                         }
@@ -549,7 +558,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
                 Effect::Speedup(n) => {
                     if state.immunities[1] <= 0 {
                         state.scroll_speed += n;
-                        state.immunities[1] = 48;
+                        state.immunities[1] = 60;
                     }
                 }
                 _ => {}
@@ -571,7 +580,8 @@ fn reset_game(state: &mut GameState) {
     state.player.position = Vec2i(160, 20);
     state.health.lives = 3;
     state.contacts.clear();
-    state.scroll_speed = 3;
+    state.scroll_speed = 2;
+    state.scroll_timer = 150;
     state.player_velocity = 0.0;
     for map in state.obstacle_maps.iter_mut() {
         map.new_map(vec![6; 40]);
