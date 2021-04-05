@@ -11,7 +11,7 @@ Beat the dinos to get to the dungeon's gem!
 * Aggressive beats sneaky
 * Defensive beats aggressive
 * Sneaky beats defensive
-* 
+
 <p>Aggressive attacks will deal 1 or 2 damage against sneaky. Defensive moves will either heal by 1 or deal 1 damage against aggressive. Sneaky can deal 0-3 damage against defensive. Nothing happens on a tie.</p>
   
 <p>Assets: https://arks.itch.io/dino-characters</p>
