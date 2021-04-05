@@ -1,6 +1,6 @@
 # Penguin Sledding
 
-Sled down the slope while avoiding obstacles! Icy patches will help you gain speed.
+<p>Sled down the slope while avoiding obstacles! Icy patches will help you gain speed. </p>
 Run with ```cargo run --bin game1```
 <p>Assets: https://stealthix.itch.io/rpg-nature-tileset</p>
 
