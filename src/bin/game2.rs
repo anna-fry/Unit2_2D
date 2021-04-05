@@ -74,14 +74,16 @@ fn main() {
 
     // TODO: Once we find the texture we want to use replace this path and delete the current placeholder file
     let tex = Rc::new(Texture::with_file(Path::new("content/dino.png")));
-    let enemy_tex = Rc::new(Texture::with_file(Path::new("content/dinor.png")));
+    let enemy_tex_r = Rc::new(Texture::with_file(Path::new("content/dinor.png")));
+    let enemy_tex_g = Rc::new(Texture::with_file(Path::new("content/dinog.png")));
+    let enemy_tex_y = Rc::new(Texture::with_file(Path::new("content/dinoy.png")));
     let level_tex = Rc::new(Texture::with_file(Path::new("content/dungeon.png")));
     let health_tex = Rc::new(Texture::with_file(Path::new("content/Heart.png")));
     let tileset = Rc::new(Tileset::new(
         {
             (0..64)
                 .map(|i| {
-                    if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18 || i == 36 || i == 38 || i == 44 || i == 46 || i == 52 || i == 54 || i == 43 {
+                    if i == 0 || i == 2 || i == 1 || i == 30 || i == 16 || i == 17 || i == 18 || i == 36 || i == 37 || i == 38 || i == 44 || i == 46 || i == 52 || i ==53 || i == 54 || i == 43 {
                         Tile {
                             solid: true,
                             collide: Effect::Nothing,
@@ -182,7 +184,7 @@ fn main() {
                 ),
             ],
             vec![Sprite::new(
-                &enemy_tex,
+                &enemy_tex_r,
                 Rect {
                     x: 0,
                     y: 0,
@@ -225,7 +227,7 @@ fn main() {
                 ),
             ],
             vec![Sprite::new(
-                &enemy_tex,
+                &enemy_tex_g,
                 Rect {
                     x: 0,
                     y: 0,
@@ -268,7 +270,7 @@ fn main() {
                 ),
             ],
             vec![Sprite::new(
-                &enemy_tex,
+                &enemy_tex_y,
                 Rect {
                     x: 0,
                     y: 0,
@@ -1202,7 +1204,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             }
 
             if state.player.position.0 < 192
-                && state.player.position.0 > 160
+                && state.player.position.0 > 150
                 && state.player.position.1 < 8
             {
                 state.level += 1;
@@ -1225,11 +1227,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize, le
             }
         }
         GameMode::FightChoice => {
-            if input.key_held(VirtualKeyCode::Return) {
-                state.mode = GameMode::Map;
-                state.passed = true;
-            }
-            else if input.key_held(VirtualKeyCode::A) {
+            if input.key_held(VirtualKeyCode::A) {
                 let enemy_choice = get_enemy_decision(
                     state,
                     levels[state.level].2,
