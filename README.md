@@ -1,6 +1,7 @@
 # Penguin Sledding
 
 Sled down the slope while avoiding obstacles! Icy patches will help you gain speed.
+Run with ```cargo run --bin game1```
 <p>Assets: https://stealthix.itch.io/rpg-nature-tileset</p>
 
 # Dungeons and Dinos
@@ -13,5 +14,7 @@ Beat the dinos to get to the dungeon's gem!
 * Sneaky beats defensive
 
 <p>Aggressive attacks will deal 1 or 2 damage against sneaky. Defensive moves will either heal by 1 or deal 1 damage against aggressive. Sneaky can deal 0-3 damage against defensive. Nothing happens on a tie.</p>
+
+Run with ```cargo run --bin game2```
   
 <p>Assets: https://arks.itch.io/dino-characters</p>
