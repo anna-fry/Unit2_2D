@@ -28,7 +28,7 @@ struct GameState {
     mode: GameMode,
     player: Sprite,
     obstacle_maps: Vec<Tilemap>,
-    spawn_timer: isize,
+    player_velocity: f32,
     scroll_speed: usize,
     map: Tilemap,
     health: HealthStatus,
@@ -218,7 +218,7 @@ fn main() {
             AnimationState::Facing_Forwad,
             Effect::Nothing,
         ),
-        spawn_timer: 0,
+        player_velocity: 0.0,
         scroll_speed: 3,
         map: Tilemap::new(
             Vec2i(0, 0),
@@ -241,7 +241,7 @@ fn main() {
                 w: 16,
                 h: 16,
             },
-            start: Vec2i(300, 15),
+            start: Vec2i(300, 30),
             spacing: -18,
         },
         contacts: vec![],
@@ -479,20 +479,28 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
             // Player control goes here
 
             if input.key_held(VirtualKeyCode::Right) {
-                state.player.position.0 += 2;
+                state.player_velocity = (state.player_velocity + 0.75).min(3.0);
                 if state.player.animation_state != AnimationState::Standing_Right {
                     state.player.animation = 2;
                     state.player.animation_state = AnimationState::Standing_Right;
                     state.player.animation_start = frame;
                 }
             } else if input.key_held(VirtualKeyCode::Left) {
-                state.player.position.0 -= 2;
+                state.player_velocity = (state.player_velocity - 0.75).max(-3.0);
                 if state.player.animation_state != AnimationState::Standing_Left {
                     state.player.animation = 1;
                     state.player.animation_state = AnimationState::Standing_Left;
                     state.player.animation_start = frame;
                 }
             } else {
+                if state.player_velocity> 0.0{
+                    state.player_velocity -= 0.1;
+                    state.player_velocity = state.player_velocity.max(0.0);
+                }
+                else if state.player_velocity< 0.0{
+                    state.player_velocity += 0.1;
+                    state.player_velocity = state.player_velocity.min(0.0);
+                }
                 if state.player.animation_state != AnimationState::Facing_Forwad && state.player.animation_state != AnimationState::Fallen {
                     state.player.animation = 0;
                     state.player.animation_state = AnimationState::Facing_Forwad;
@@ -501,6 +509,7 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
             }
 
             state.player.position.1 = 30;
+            state.player.position.0 += state.player_velocity as i32;
 
             // Scroll the scene
             update_obstacles(state);
@@ -562,8 +571,8 @@ fn reset_game(state: &mut GameState) {
     state.player.position = Vec2i(160, 20);
     state.health.lives = 3;
     state.contacts.clear();
-    state.spawn_timer = 0;
     state.scroll_speed = 3;
+    state.player_velocity = 0.0;
     for map in state.obstacle_maps.iter_mut() {
         map.new_map(vec![6; 40]);
     }
