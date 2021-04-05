@@ -221,7 +221,7 @@ fn main() {
         ),
         player_velocity: 0.0,
         scroll_speed: 2,
-        scroll_timer: 100,
+        scroll_timer: 180,
         map: Tilemap::new(
             Vec2i(0, 0),
             (10, 10),
@@ -482,14 +482,14 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
 
             if input.key_held(VirtualKeyCode::Right) {
                 state.player_velocity = (state.player_velocity + 0.75).min(3.0);
-                if state.player.animation_state != AnimationState::Standing_Right{
+                if state.player.animation_state != AnimationState::Standing_Right && state.player.animation_state != AnimationState::Fallen {
                     state.player.animation = 2;
                     state.player.animation_state = AnimationState::Standing_Right;
                     state.player.animation_start = frame;
                 }
             } else if input.key_held(VirtualKeyCode::Left) {
                 state.player_velocity = (state.player_velocity - 0.75).max(-3.0);
-                if state.player.animation_state != AnimationState::Standing_Left {
+                if state.player.animation_state != AnimationState::Standing_Left && state.player.animation_state != AnimationState::Fallen{
                     state.player.animation = 1;
                     state.player.animation_state = AnimationState::Standing_Left;
                     state.player.animation_start = frame;
@@ -509,8 +509,15 @@ fn update_game(state: &mut GameState, input: &WinitInputHelper, frame: usize) {
                     state.player.animation_start = frame;
                 }
             }
-            if state.scroll_timer <= 0{
-                state.scroll_timer = 150;
+            if state.scroll_timer == 0{
+                //bootleg animation forcing: fallen state should only exist 
+                //until the scroll timer changes the speed to 1
+                if state.player.animation_state == AnimationState::Fallen{
+                    state.player.animation = 0;
+                    state.player.animation_state = AnimationState::Facing_Forwad;
+                    state.player.animation_start = frame;
+                }
+                state.scroll_timer = 180;
                 state.scroll_speed +=1;
             }
             else{
@@ -581,7 +588,7 @@ fn reset_game(state: &mut GameState) {
     state.health.lives = 3;
     state.contacts.clear();
     state.scroll_speed = 2;
-    state.scroll_timer = 150;
+    state.scroll_timer = 180;
     state.player_velocity = 0.0;
     for map in state.obstacle_maps.iter_mut() {
         map.new_map(vec![6; 40]);
