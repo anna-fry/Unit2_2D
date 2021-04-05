@@ -1,7 +1,7 @@
 # Penguin Sledding
 
 Sled down the slope while avoiding obstacles! Icy patches will help you gain speed.
-<p>Assets:https://stealthix.itch.io/rpg-nature-tileset</p>
+<p>Assets: https://stealthix.itch.io/rpg-nature-tileset</p>
 
 # Dungeons and Dinos
 
