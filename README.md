@@ -3,7 +3,9 @@
 <p>Sled down the slope while avoiding obstacles! Icy patches will help you gain speed. </p>
 
 Run with ```cargo run --bin game1```
-<p>Assets: https://stealthix.itch.io/rpg-nature-tileset</p>
+<p>Assets: </p>
+
+* https://stealthix.itch.io/rpg-nature-tileset
 
 # Dungeons and Dinos
 
@@ -18,4 +20,7 @@ Beat the dinos to get to the dungeon's gem!
 
 Run with ```cargo run --bin game2```
   
-<p>Assets: https://arks.itch.io/dino-characters</p>
+<p>Assets: </p>
+
+* https://arks.itch.io/dino-characters
+* https://stealthix.itch.io/dungeon-tileset-32x32-px
