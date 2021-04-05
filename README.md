@@ -6,7 +6,7 @@ Sled down the slope while avoiding obstacles! Icy patches will help you gain spe
 # Dungeons and Dinos
 
 Beat the dinos to get to the dungeon's gem!
-<p>In battle, each option has different effects and is more or less effective against the enemy's moves:<\p>
+<p>In battle, each option has different effects and is more or less effective against the enemy's moves:</p>
 Aggressive beats sneaky
 Defensive beats aggressive
 Sneaky beats defensive
