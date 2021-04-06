@@ -447,7 +447,7 @@ fn update_obstacles(state: &mut GameState) {
                 let mut num_obstacles = rng.gen_range(0, 4);
                 let mut col = 0;
                 while num_obstacles > 0 {
-                    col = rng.gen_range(col, 8 - num_obstacles);
+                    col = rng.gen_range(col, 9 - num_obstacles);
                     if rng.gen_bool(0.5) {
                         //stone
                         map[row * 8 + col] = 2;
@@ -590,6 +590,7 @@ fn reset_game(state: &mut GameState) {
     state.scroll_speed = 2;
     state.scroll_timer = 180;
     state.player_velocity = 0.0;
+    state.player.animation_state = AnimationState::Facing_Forwad;
     for map in state.obstacle_maps.iter_mut() {
         map.new_map(vec![6; 40]);
     }
